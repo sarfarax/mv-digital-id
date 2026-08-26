@@ -1,0 +1,7 @@
+node_modules/
+.DS_Store
+*.log
+
+# Cards issued while trying the demo; the checked-in fixtures under samples/
+# are regenerated with tools/make-card.mjs instead.
+id-card-*.png

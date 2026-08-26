@@ -1,0 +1,12 @@
+{
+  "name": "mv-digital-id",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Verifiable digital ID card for the Maldives: BLS-signed QR payload bound to a perceptual hash of the cardholder photo",
+  "type": "module",
+  "scripts": {
+    "serve": "python3 -m http.server 8000",
+    "test": "node tools/phash-selftest.mjs"
+  },
+  "license": "MIT"
+}

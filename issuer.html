@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Issue a card &middot; Maldives Digital ID</title>
+<meta name="description" content="Issue a digitally signed Maldivian identity card whose QR code binds the cardholder details to a perceptual hash of the portrait.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header no-print">
+	<div class="site-header__inner">
+		<a class="brand" href="index.html">
+			<span class="brand__mark" aria-hidden="true">MV</span>
+			<span>Maldives Digital ID</span>
+		</a>
+		<nav class="site-nav">
+			<a href="index.html">Overview</a>
+			<a href="issuer.html" aria-current="page">Issue</a>
+			<a href="scanner.html">Verify</a>
+		</nav>
+	</div>
+</header>
+
+<main class="page">
+
+	<div class="page__intro no-print">
+		<h1>Issue a card</h1>
+		<p>
+			Fill in the cardholder details and add a portrait. The portrait is normalised and
+			perceptually hashed, that hash is appended to the printed fields, and the whole
+			string is signed with the issuing authority&rsquo;s BLS12-381 key before being
+			compressed into the QR code.
+		</p>
+	</div>
+
+	<div class="layout-split">
+
+		<!-- ---------------------------------------------------------- -->
+		<!-- Left column: inputs                                        -->
+		<!-- ---------------------------------------------------------- -->
+		<div class="no-print">
+
+			<section class="panel">
+				<div class="panel__head">
+					<span class="panel__step">1</span>
+					<h2>Cardholder details</h2>
+				</div>
+
+				<form id="detailsForm" novalidate>
+					<div class="field-grid">
+						<div class="field" data-field="idNumber">
+							<label for="idNumber">ID card number</label>
+							<input id="idNumber" name="idNumber" autocomplete="off" placeholder="A123456" maxlength="16">
+							<span class="field__error" data-error-for="idNumber"></span>
+						</div>
+
+						<div class="field" data-field="sex">
+							<label for="sex">Sex</label>
+							<select id="sex" name="sex">
+								<option value="">Select&hellip;</option>
+								<option value="M">M &mdash; Male</option>
+								<option value="F">F &mdash; Female</option>
+							</select>
+							<span class="field__error" data-error-for="sex"></span>
+						</div>
+
+						<div class="field field--wide" data-field="name">
+							<label for="name">Full name</label>
+							<input id="name" name="name" autocomplete="off" placeholder="Aishath Nasheeda Ibrahim" maxlength="60">
+							<span class="field__error" data-error-for="name"></span>
+						</div>
+
+						<div class="field" data-field="dob">
+							<label for="dob">Date of birth</label>
+							<input id="dob" name="dob" type="date">
+							<span class="field__error" data-error-for="dob"></span>
+						</div>
+
+						<div class="field" data-field="phone">
+							<label for="phone">Phone</label>
+							<input id="phone" name="phone" autocomplete="off" placeholder="+960 771 2345" maxlength="20">
+							<span class="field__error" data-error-for="phone"></span>
+						</div>
+
+						<div class="field field--wide" data-field="address">
+							<label for="address">Permanent address</label>
+							<input id="address" name="address" autocomplete="off" placeholder="Ma. Blue Heaven, Male, Maldives" maxlength="80">
+							<span class="field__error" data-error-for="address"></span>
+						</div>
+					</div>
+
+					<div class="actions" style="margin-top: 0.9rem;">
+						<button type="button" class="btn-ghost btn-small" id="loadSample">Load sample cardholder</button>
+					</div>
+				</form>
+			</section>
+
+			<section class="panel">
+				<div class="panel__head">
+					<span class="panel__step">2</span>
+					<h2>Portrait</h2>
+				</div>
+				<p class="panel__hint">
+					Drag to reposition and use the slider to zoom. The 3:4 frame is what gets printed
+					on the card and what gets hashed &mdash; nothing outside it is bound to the signature.
+				</p>
+
+				<div class="stack">
+					<div class="upload-drop" id="photoDrop">
+						<input type="file" id="photoInput" accept="image/*" class="hidden">
+						<button type="button" class="btn-ghost btn-small" id="photoPick">Choose a photo</button>
+						<span id="photoDropLabel">or drop an image here</span>
+					</div>
+
+					<div id="cropperWrap" class="hidden stack">
+						<div class="cropper" id="cropper">
+							<canvas id="cropCanvas"></canvas>
+							<div class="cropper__frame" id="cropFrame"></div>
+						</div>
+
+						<div class="slider-row">
+							<label for="cropZoom" style="font-size: 0.85rem; color: var(--ink-soft);">Zoom</label>
+							<input type="range" id="cropZoom" min="20" max="100" value="80">
+							<output id="cropZoomOut">80%</output>
+						</div>
+
+						<div class="compare-grid" style="max-width: 320px;">
+							<figure class="compare-cell" style="margin: 0;">
+								<canvas id="portraitPreview" width="300" height="400"></canvas>
+								<figcaption>Normalised 300&times;400 portrait</figcaption>
+							</figure>
+							<div style="align-self: center; text-align: left;">
+								<div class="field__label" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint);">Perceptual hash</div>
+								<div class="mono-block" id="photoHashOut" style="max-height: none;">&mdash;</div>
+								<p class="field__note" style="margin-top: 0.4rem;">64-bit pHash DCT hash of the frame above.</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</section>
+
+			<section class="panel">
+				<div class="panel__head">
+					<span class="panel__step">3</span>
+					<h2>Issuing key</h2>
+				</div>
+				<p class="panel__hint">
+					The secret key signs the card and never leaves this page. The public key is what a
+					verifier needs; it is already built into the scanner.
+				</p>
+
+				<div class="stack">
+					<div class="field">
+						<label for="secretKey">Master secret key (hex, 32 bytes)</label>
+						<textarea id="secretKey" rows="2" spellcheck="false"></textarea>
+						<span class="field__error" data-error-for="secretKey"></span>
+					</div>
+
+					<div class="field">
+						<label for="publicKey">Master public key (hex, 48 bytes)</label>
+						<textarea id="publicKey" rows="2" spellcheck="false" readonly></textarea>
+						<span class="field__note" id="publicKeyNote"></span>
+					</div>
+
+					<div class="actions">
+						<button type="button" class="btn-ghost btn-small" id="newKey">Generate a new keypair</button>
+						<button type="button" class="btn-ghost btn-small" id="resetKey">Restore demo key</button>
+					</div>
+
+					<div class="field">
+						<label for="encodingMode">QR payload encoding</label>
+						<select id="encodingMode">
+							<option value="binary">Binary byte mode &mdash; smallest</option>
+							<option value="text">URL-safe text mode &mdash; most compatible</option>
+						</select>
+						<span class="field__note">
+							Binary matches the reference implementation. Text mode is about a third larger
+							but survives readers that mangle raw bytes.
+						</span>
+					</div>
+				</div>
+			</section>
+
+			<section class="panel">
+				<div class="actions">
+					<button type="button" class="btn-primary" id="generate">Sign and generate card</button>
+					<button type="button" class="btn-ghost" id="selfVerify" disabled>Verify this card</button>
+					<span class="status-line" id="generateStatus"></span>
+				</div>
+			</section>
+
+		</div>
+
+		<!-- ---------------------------------------------------------- -->
+		<!-- Right column: output                                       -->
+		<!-- ---------------------------------------------------------- -->
+		<div>
+
+			<section class="panel panel--print">
+				<div class="panel__head no-print">
+					<h2>Card</h2>
+					<span class="badge" id="cardState">Not issued</span>
+					<div class="actions" style="margin-left: auto;">
+						<button type="button" class="btn-ghost btn-small" id="printCard" disabled>Print</button>
+						<button type="button" class="btn-ghost btn-small" id="downloadCard" disabled>Download PNG</button>
+					</div>
+				</div>
+
+				<div class="card-stage">
+					<article class="id-card id-card--placeholder" id="idCard">
+						<header class="id-card__header">
+							<span class="id-card__emblem" aria-hidden="true">MV</span>
+							<span>
+								<span class="id-card__country">Republic of Maldives</span><br>
+								<span class="id-card__type">National Identity Card</span>
+							</span>
+						</header>
+
+						<img class="id-card__portrait hidden" id="cardPortrait" alt="Cardholder portrait">
+						<div class="id-card__portrait-empty" id="cardPortraitEmpty">Portrait</div>
+
+						<div class="id-card__idno" id="cardIdNumber">&mdash;</div>
+
+						<div class="id-card__fields">
+							<div>
+								<div class="id-card__field-label">Name</div>
+								<div class="id-card__field-value" id="cardName">&mdash;</div>
+							</div>
+							<div style="display: flex; gap: 3mm;">
+								<div>
+									<div class="id-card__field-label">Sex</div>
+									<div class="id-card__field-value" id="cardSex">&mdash;</div>
+								</div>
+								<div>
+									<div class="id-card__field-label">Date of Birth</div>
+									<div class="id-card__field-value" id="cardDob">&mdash;</div>
+								</div>
+							</div>
+							<div>
+								<div class="id-card__field-label">Phone</div>
+								<div class="id-card__field-value" id="cardPhone">&mdash;</div>
+							</div>
+							<div>
+								<div class="id-card__field-label">Permanent Address</div>
+								<div class="id-card__field-value id-card__field-value--small" id="cardAddress">&mdash;</div>
+							</div>
+						</div>
+
+						<div class="id-card__qr-zone"></div>
+						<canvas class="id-card__qr" id="cardQr" width="1" height="1"></canvas>
+						<div class="id-card__qr-caption">Scan to verify</div>
+
+						<footer class="id-card__footer">
+							<span id="cardIssuer">Department of National Registration</span>
+							<span>BLS12-381 signed</span>
+						</footer>
+					</article>
+				</div>
+			</section>
+
+			<section class="panel no-print">
+				<div class="panel__head">
+					<h2>Signed payload</h2>
+					<span class="badge" id="payloadSize">&mdash;</span>
+				</div>
+
+				<div class="stack">
+					<div>
+						<h3>Signed message</h3>
+						<p class="field__note">Version, the six printed fields, then the portrait hash.</p>
+						<pre class="mono-block" id="messageOut">&mdash;</pre>
+					</div>
+
+					<div>
+						<h3>Signature</h3>
+						<p class="field__note">BLS12-381, 96 bytes.</p>
+						<pre class="mono-block" id="signatureOut">&mdash;</pre>
+					</div>
+
+					<div>
+						<h3>Barcode data</h3>
+						<p class="field__note">
+							Message and signature joined, before compression. Edit this and press
+							<em>Verify this card</em> to watch the signature check fail.
+						</p>
+						<textarea id="barcodeData" rows="4" spellcheck="false"></textarea>
+					</div>
+
+					<div id="selfVerifyResult"></div>
+				</div>
+			</section>
+
+			<section class="panel no-print">
+				<div class="panel__head">
+					<h2>What is bound to the signature</h2>
+				</div>
+				<dl class="data-list" id="boundList">
+					<dt>Portrait hash</dt><dd id="boundHash">&mdash;</dd>
+					<dt>QR version</dt><dd id="boundQrVersion">&mdash;</dd>
+					<dt>Encoding</dt><dd id="boundEncoding">&mdash;</dd>
+				</dl>
+				<p class="note" style="margin-top: 0.9rem;">
+					Changing any printed field, or swapping the portrait for a different face,
+					changes the signed message and invalidates the signature.
+				</p>
+			</section>
+
+		</div>
+	</div>
+</main>
+
+<script type="module" src="js/issuer.js"></script>
+</body>
+</html>

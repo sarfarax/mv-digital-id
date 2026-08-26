@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maldives Verifiable Digital ID</title>
+<meta name="description" content="A digitally signed Maldivian identity card whose QR code binds the printed details to a perceptual hash of the cardholder photo, with a browser-based verifier.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+	<div class="site-header__inner">
+		<a class="brand" href="index.html">
+			<span class="brand__mark" aria-hidden="true">MV</span>
+			<span>Maldives Digital ID</span>
+		</a>
+		<nav class="site-nav">
+			<a href="index.html" aria-current="page">Overview</a>
+			<a href="issuer.html">Issue</a>
+			<a href="scanner.html">Verify</a>
+			<a href="tests.html">Tests</a>
+		</nav>
+	</div>
+</header>
+
+<main class="page">
+
+	<div class="hero">
+		<h1>An identity card you can check without asking anyone</h1>
+		<p>
+			The card carries the same details as the front of a Maldivian ID card. Its QR code holds
+			those details plus a perceptual hash of the portrait, all signed with the issuing
+			authority&rsquo;s BLS12-381 key. A verifier reads the code offline, confirms the signature,
+			then re-photographs the portrait and checks it still hashes to the signed value.
+		</p>
+	</div>
+
+	<div class="tile-grid" style="margin-bottom: 1.5rem;">
+		<a class="tile" href="issuer.html">
+			<div class="tile__step">Step one</div>
+			<h2>Issue a card</h2>
+			<p>Enter the cardholder details, frame a portrait, sign, and print a card at exactly bank-card size.</p>
+		</a>
+		<a class="tile" href="scanner.html">
+			<div class="tile__step">Step two</div>
+			<h2>Verify a card</h2>
+			<p>Scan the QR with a camera, check the signature, and confirm the printed photograph is the signed one.</p>
+		</a>
+		<a class="tile" href="tests.html">
+			<div class="tile__step">Evidence</div>
+			<h2>Run the tests</h2>
+			<p>Exercise the whole pipeline in the browser, including forged cards and skewed camera angles.</p>
+		</a>
+	</div>
+
+	<div class="layout-split">
+		<section class="panel">
+			<div class="panel__head"><h2>What the QR code contains</h2></div>
+			<p>Everything before the signature is what gets signed:</p>
+			<pre class="mono-block">MV1#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#+960 771 2345#Ma. Blue Heaven, Male, Maldives#30b2e6c3d32d0bf4#&lt;signature&gt;</pre>
+			<p style="margin-top: 0.9rem;">
+				The trailing 16 hex characters before the signature are the portrait&rsquo;s 64-bit
+				perceptual hash. That single field is what ties the photograph to the data: alter
+				the picture and the hash no longer matches, alter the hash and the signature breaks.
+			</p>
+			<p>
+				The whole string is compressed with LZString and drawn as a QR code, which lands
+				around 276 bytes &mdash; a version 11 symbol.
+			</p>
+		</section>
+
+		<section class="panel">
+			<div class="panel__head"><h2>How verification works</h2></div>
+			<ol class="flow">
+				<li>The verifier finds the QR code in a camera frame and decompresses the payload.</li>
+				<li>The BLS signature is checked against the issuer&rsquo;s published public key. If it fails, nothing else matters.</li>
+				<li>jsQR reports the QR&rsquo;s four corners. Because the card is a rigid, fixed layout, those corners determine where the portrait must be.</li>
+				<li>The portrait is lifted out of the frame with perspective and rotation removed, then normalised to the same 300&times;400 grayscale raster the issuer hashed.</li>
+				<li>Its perceptual hash is compared with the signed one. A handful of differing bits is ordinary camera noise; a large difference means a different face.</li>
+			</ol>
+		</section>
+	</div>
+
+	<section class="panel">
+		<div class="panel__head"><h2>What this does not do</h2></div>
+		<p>
+			This is a working demonstration, not a deployable identity system. The gaps are
+			deliberate and worth stating plainly:
+		</p>
+		<ul style="color: var(--ink-soft); margin: 0; padding-left: 1.2rem;">
+			<li>The demo signing key is committed to this repository, so anyone can mint a card that this scanner accepts. A real issuer keeps that key in hardware.</li>
+			<li>There is no revocation, no expiry date, and no way to tell a reported-stolen card from a valid one. A signature says only &ldquo;this was issued&rdquo;, never &ldquo;this is still good&rdquo;.</li>
+			<li>The portrait check compares a photograph to a photograph. It confirms the picture on the card is the signed one; it does not confirm the person holding the card is the person in the picture. That is a job for a human or for face recognition, neither of which is here.</li>
+			<li>Nothing in the payload is encrypted. Anyone who scans the card can read every field, exactly as they could by looking at it.</li>
+		</ul>
+	</section>
+
+	<section class="panel">
+		<div class="panel__head"><h2>Built on</h2></div>
+		<p>
+			The signing approach follows
+			<a href="https://github.com/oelna/signed-qr-codes">oelna/signed-qr-codes</a>, which
+			demonstrates BLS-signed QR payloads; its
+			<a href="https://github.com/paulmillr/noble-bls12-381">Noble BLS</a>,
+			<a href="https://pieroxy.net/blog/pages/lz-string/">LZString</a> and
+			<a href="https://www.nayuki.io/page/qr-code-generator-library">Nayuki QR</a> modules are
+			vendored unchanged. Reading QR codes uses <a href="https://github.com/cozmo/jsQR">jsQR</a>.
+			The image hash is a JavaScript port of the DCT hash from
+			<a href="https://www.phash.org">pHash.org</a>.
+		</p>
+		<p style="margin-bottom: 0;">
+			No build step and no backend: every page is static and every check runs in the browser.
+		</p>
+	</section>
+
+</main>
+</body>
+</html>

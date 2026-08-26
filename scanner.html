@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verify a card &middot; Maldives Digital ID</title>
+<meta name="description" content="Scan a Maldivian digital identity card, check its BLS signature, and confirm the printed portrait matches the perceptual hash inside the QR code.">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+	<div class="site-header__inner">
+		<a class="brand" href="index.html">
+			<span class="brand__mark" aria-hidden="true">MV</span>
+			<span>Maldives Digital ID</span>
+		</a>
+		<nav class="site-nav">
+			<a href="index.html">Overview</a>
+			<a href="issuer.html">Issue</a>
+			<a href="scanner.html" aria-current="page">Verify</a>
+		</nav>
+	</div>
+</header>
+
+<main class="page">
+
+	<div class="page__intro">
+		<h1>Verify a card</h1>
+		<p>
+			Two independent checks. The signature proves the printed details were issued by the
+			authority and have not been edited. The portrait check proves the photograph on the
+			card is the one the authority signed, so a genuine card cannot be reused with a
+			different face pasted over it.
+		</p>
+	</div>
+
+	<div id="overallVerdict"></div>
+
+	<div class="layout-split">
+
+		<!-- ---------------------------------------------------------- -->
+		<!-- Step 1: the QR code                                        -->
+		<!-- ---------------------------------------------------------- -->
+		<div>
+			<section class="panel">
+				<div class="panel__head">
+					<span class="panel__step">1</span>
+					<h2>Scan the QR code</h2>
+					<span class="badge" id="signatureBadge">Waiting</span>
+				</div>
+				<p class="panel__hint">
+					Hold the whole card in frame. If the entire card is visible, the portrait check
+					below runs automatically from the same image.
+				</p>
+
+				<div class="tabs" role="tablist">
+					<button role="tab" aria-selected="true" data-tab="qr" data-panel="qrCamera">Camera</button>
+					<button role="tab" aria-selected="false" data-tab="qr" data-panel="qrUpload">Upload an image</button>
+				</div>
+
+				<div id="qrCamera" class="stack">
+					<div class="camera">
+						<video id="video" playsinline muted></video>
+						<canvas class="camera__overlay" id="overlay"></canvas>
+						<div class="camera__idle" id="cameraIdle">Camera is off</div>
+						<div class="camera__hint" id="cameraHint">Point the camera at the card</div>
+					</div>
+					<div class="actions">
+						<button type="button" class="btn-primary" id="startCamera">Start camera</button>
+						<button type="button" class="btn-ghost" id="stopCamera" disabled>Stop</button>
+					</div>
+				</div>
+
+				<div id="qrUpload" class="stack hidden">
+					<div class="upload-drop" id="cardDrop">
+						<input type="file" id="cardInput" accept="image/*" class="hidden">
+						<button type="button" class="btn-ghost btn-small" id="cardPick">Choose a card image</button>
+						<span id="cardDropLabel">or drop a photo of the whole card here</span>
+					</div>
+					<figure style="margin: 0;" class="hidden" id="cardImageWrap">
+						<canvas id="cardImagePreview" style="width: 100%; border-radius: var(--radius); border: 1px solid var(--line);"></canvas>
+						<figcaption class="field__note" style="margin-top: 0.3rem;">Detected QR outline in teal, projected portrait area in red.</figcaption>
+					</figure>
+				</div>
+
+				<div class="status-line" id="scanStatus" style="margin-top: 0.8rem;"></div>
+			</section>
+
+			<section class="panel">
+				<div class="panel__head">
+					<h2>Cardholder</h2>
+				</div>
+				<dl class="data-list" id="identityList">
+					<dt>ID card number</dt><dd id="outIdNumber">&mdash;</dd>
+					<dt>Name</dt><dd id="outName">&mdash;</dd>
+					<dt>Sex</dt><dd id="outSex">&mdash;</dd>
+					<dt>Date of birth</dt><dd id="outDob">&mdash;</dd>
+					<dt>Phone</dt><dd id="outPhone">&mdash;</dd>
+					<dt>Permanent address</dt><dd id="outAddress">&mdash;</dd>
+				</dl>
+				<p class="note" id="identityNote" style="margin-top: 0.9rem;">
+					Nothing scanned yet. These values are only trustworthy once the signature check passes.
+				</p>
+			</section>
+		</div>
+
+		<!-- ---------------------------------------------------------- -->
+		<!-- Step 2: the portrait                                       -->
+		<!-- ---------------------------------------------------------- -->
+		<div>
+			<section class="panel">
+				<div class="panel__head">
+					<span class="panel__step">2</span>
+					<h2>Check the portrait</h2>
+					<span class="badge" id="photoBadge">Waiting</span>
+				</div>
+				<p class="panel__hint">
+					The card photo is re-hashed and compared with the hash the authority signed.
+					A low Hamming distance means the same picture; a high one means it was swapped.
+				</p>
+
+				<div class="compare-grid">
+					<figure class="compare-cell" style="margin: 0;">
+						<canvas id="capturedPortrait" width="300" height="400"></canvas>
+						<figcaption>Portrait read from the card</figcaption>
+					</figure>
+					<div style="align-self: center; text-align: left;">
+						<div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint);">Hamming distance</div>
+						<div style="font-size: 1.9rem; font-weight: 700; line-height: 1.1;" id="distanceValue">&mdash;</div>
+						<div class="meter"><div class="meter__fill" id="distanceMeter" style="width: 0;"></div></div>
+						<div class="field__note" id="distanceNote">Out of 64 bits.</div>
+					</div>
+				</div>
+
+				<dl class="data-list" style="margin-bottom: 0.9rem;">
+					<dt>Signed hash</dt><dd class="mono-block" style="padding: 0.25rem 0.5rem;" id="expectedHash">&mdash;</dd>
+					<dt>Measured hash</dt><dd class="mono-block" style="padding: 0.25rem 0.5rem;" id="measuredHash">&mdash;</dd>
+				</dl>
+
+				<div class="slider-row" style="margin-bottom: 0.9rem;">
+					<label for="threshold" style="font-size: 0.85rem; color: var(--ink-soft);">Accept up to</label>
+					<input type="range" id="threshold" min="0" max="32" value="12">
+					<output id="thresholdOut">12 bits</output>
+				</div>
+
+				<p class="field__note" style="margin-top: -0.5rem; margin-bottom: 0.9rem;">
+					Scanning a card on screen is close to lossless, so distances stay near zero.
+					Photographing printed cards under uneven light is noisier; raise the tolerance if
+					genuine cards are being rejected, but the higher it goes the easier it is for a
+					similar-looking face to slip through.
+				</p>
+
+				<div class="tabs" role="tablist">
+					<button role="tab" aria-selected="true" data-tab="photo" data-panel="photoCard">Photo of the card</button>
+					<button role="tab" aria-selected="false" data-tab="photo" data-panel="photoDirect">Portrait image only</button>
+				</div>
+
+				<div id="photoCard" class="stack">
+					<p class="field__note">
+						Locates the QR in the image, then uses the card&rsquo;s fixed geometry to lift the
+						portrait out with perspective and rotation removed.
+					</p>
+					<div class="upload-drop" id="photoCardDrop">
+						<input type="file" id="photoCardInput" accept="image/*" class="hidden">
+						<button type="button" class="btn-ghost btn-small" id="photoCardPick">Choose a card image</button>
+						<span>or drop one here</span>
+					</div>
+				</div>
+
+				<div id="photoDirect" class="stack hidden">
+					<p class="field__note">
+						Treats the whole image as the portrait and centre-crops it to 3:4. Useful for
+						testing whether a specific photograph matches the card.
+					</p>
+					<div class="upload-drop" id="photoDirectDrop">
+						<input type="file" id="photoDirectInput" accept="image/*" class="hidden">
+						<button type="button" class="btn-ghost btn-small" id="photoDirectPick">Choose a portrait</button>
+						<span>or drop one here</span>
+					</div>
+				</div>
+
+				<div class="status-line" id="photoStatus" style="margin-top: 0.8rem;"></div>
+			</section>
+
+			<section class="panel">
+				<div class="panel__head">
+					<h2>Trusted issuer</h2>
+				</div>
+				<div class="field">
+					<label for="trustedKey">Public key accepted by this verifier</label>
+					<textarea id="trustedKey" rows="2" spellcheck="false"></textarea>
+					<span class="field__note" id="trustedKeyNote"></span>
+				</div>
+				<div class="actions" style="margin-top: 0.6rem;">
+					<button type="button" class="btn-ghost btn-small" id="restoreKey">Restore official key</button>
+				</div>
+				<p class="note" style="margin-top: 0.9rem;">
+					A signature only means something relative to a key you already trust. Replace this
+					with a key from the issuer page to verify cards you signed yourself.
+				</p>
+			</section>
+
+			<section class="panel">
+				<div class="panel__head">
+					<h2>Raw payload</h2>
+					<span class="badge" id="payloadBadge">&mdash;</span>
+				</div>
+				<div class="stack">
+					<div>
+						<h3>Signed message</h3>
+						<pre class="mono-block" id="rawMessage">&mdash;</pre>
+					</div>
+					<div>
+						<h3>Signature</h3>
+						<pre class="mono-block" id="rawSignature">&mdash;</pre>
+					</div>
+				</div>
+			</section>
+		</div>
+	</div>
+</main>
+
+<script src="js/lib/jsQR.js"></script>
+<script type="module" src="js/scanner.js"></script>
+</body>
+</html>
