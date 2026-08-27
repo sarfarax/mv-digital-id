@@ -5,13 +5,17 @@
  *
  * Layout, following the '#'-separated convention of oelna/signed-qr-codes:
  *
- *   MV1#idNumber#name#sex#dob#phone#address#photoHash#signature
- *   \______________ signed message ______________/
+ *   MV2#idNumber#name#sex#dob#expiry#address#photoHash#signature
+ *   \_______________ signed message _______________/
  *
  * Everything up to and including the photo hash is signed as one string, so
  * neither a printed field nor the portrait can be altered without breaking the
  * BLS signature. The whole thing is then LZString-compressed before it is
  * drawn as a barcode.
+ *
+ * MV1 carried a phone number in the position now held by the expiry date.
+ * Because the fields are positional, a reader that accepted both versions would
+ * present an MV1 phone number as an expiry date, so MV1 is refused outright.
  */
 
 import { nobleBLS } from './lib/noble-bls.js';
@@ -19,7 +23,7 @@ import { LZString } from './lib/lz-string.js';
 import { qrcodegen } from './lib/qr-gen-lib.js';
 import { isValidHash } from './phash.js';
 
-export const SCHEMA_VERSION = 'MV1';
+export const SCHEMA_VERSION = 'MV2';
 export const SEPARATOR = '#';
 
 export const FIELDS = [
@@ -27,7 +31,7 @@ export const FIELDS = [
 	{ key: 'name', label: 'Name', maxLength: 60 },
 	{ key: 'sex', label: 'Sex', maxLength: 1 },
 	{ key: 'dob', label: 'Date of Birth', maxLength: 10 },
-	{ key: 'phone', label: 'Phone', maxLength: 20 },
+	{ key: 'expiry', label: 'Expiry Date', maxLength: 10 },
 	{ key: 'address', label: 'Permanent Address', maxLength: 80 }
 ];
 
@@ -101,6 +105,44 @@ export function sanitizeFields(fields) {
 	return out;
 }
 
+/*
+ * Dates are handled in UTC throughout. A card is not "expired" at midnight in
+ * one timezone and valid in another, and comparing against a local-time parse
+ * would make a card near its expiry read differently either side of a border.
+ *
+ * @returns {number|null} milliseconds at midnight UTC, or null if unparsable
+ */
+export function parseIsoDate(value) {
+	const text = String(value ?? '').trim();
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+	const time = Date.parse(`${text}T00:00:00Z`);
+	if (Number.isNaN(time)) return null;
+	// Date.parse accepts 2025-02-30 and rolls it into March; reject that.
+	if (new Date(time).toISOString().slice(0, 10) !== text) return null;
+	return time;
+}
+
+const DAY_MS = 86400000;
+
+/**
+ * Judge a card's expiry date. A card stays valid to the end of the day printed
+ * on it, so an expiry of today is still good today.
+ *
+ * @param {string} expiry the expiry field, expected as YYYY-MM-DD
+ * @param {number} [at] the moment to judge against, defaulting to now
+ * @returns {{state: 'valid'|'expired'|'unreadable', daysRemaining: number|null}}
+ */
+export function expiryStatus(expiry, at = Date.now()) {
+	const midnight = parseIsoDate(expiry);
+	if (midnight === null) return { state: 'unreadable', daysRemaining: null };
+
+	const endOfDay = midnight + DAY_MS - 1;
+	return {
+		state: at > endOfDay ? 'expired' : 'valid',
+		daysRemaining: Math.ceil((endOfDay - at) / DAY_MS)
+	};
+}
+
 export function validateFields(fields) {
 	const errors = {};
 	const clean = sanitizeFields(fields);
@@ -112,15 +154,12 @@ export function validateFields(fields) {
 
 	if (!['M', 'F'].includes(clean.sex.toUpperCase())) errors.sex = 'Select a value';
 
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(clean.dob)) errors.dob = 'Use the format YYYY-MM-DD';
-	else {
-		const date = new Date(`${clean.dob}T00:00:00Z`);
-		if (Number.isNaN(date.getTime())) errors.dob = 'Not a real date';
-		else if (date.getTime() > Date.now()) errors.dob = 'Date of birth is in the future';
-	}
+	if (parseIsoDate(clean.dob) === null) errors.dob = 'Use the format YYYY-MM-DD';
+	else if (parseIsoDate(clean.dob) > Date.now()) errors.dob = 'Date of birth is in the future';
 
-	if (!clean.phone) errors.phone = 'Phone is required';
-	else if (!/^[+\d][\d\s-]{5,}$/.test(clean.phone)) errors.phone = 'Enter a valid phone number';
+	const expiry = expiryStatus(clean.expiry);
+	if (expiry.state === 'unreadable') errors.expiry = 'Use the format YYYY-MM-DD';
+	else if (expiry.state === 'expired') errors.expiry = 'Expiry date is already in the past';
 
 	if (!clean.address) errors.address = 'Permanent address is required';
 

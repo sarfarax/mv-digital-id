@@ -29,16 +29,28 @@ Then open <http://localhost:8000>.
 - `issuer.html` — fill in details, frame a portrait, sign, print a card
 - `scanner.html` — scan a card, check the signature, check the portrait
 - `tests.html` — runs the whole pipeline in the browser, including a forged card
+- `proposal.html` — stakeholder paper: problem, national context, technology, rollout
+- `deck.html` — presentation of the same argument, with live demo links
 
 ### Try it without a camera or printer
 
-`samples/` contains two ready-made cards. On the verify page, switch to
-**Upload an image** and drop in:
+`samples/` contains four ready-made cards (and the real photographs they were
+built from). On the verify page, switch to **Upload an image** and drop in:
 
 - `card-genuine.png` — signature valid, portrait matches, card accepted
 - `card-forged.png` — the *same untampered QR code* with a different face
   printed beside it. The signature still passes; the portrait check is what
   catches it.
+- `card-expired.png` — correctly signed and correctly photographed, but dated
+  two years ago. Nothing cryptographic is wrong with it; only the expiry check
+  turns it away.
+- `card-tampered.png` — printed fields rewritten and the QR re-encoded to match;
+  the signature is what fails.
+
+Sample portraits (`portrait-1.jpg` … `portrait-4.jpg`) are taken from the
+Maldives Immigration passport photo standards examples:
+[imuga.immigration.gov.mv/passport/photo-standards](https://imuga.immigration.gov.mv/passport/photo-standards).
+They are used here only to demonstrate issuance and verification.
 
 ## What the QR code contains
 
@@ -46,14 +58,19 @@ Fields are joined with `#`, following the convention of
 [oelna/signed-qr-codes](https://github.com/oelna/signed-qr-codes):
 
 ```
-MV1#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#+960 771 2345#Ma. Blue Heaven, Male, Maldives#2c3cbcbcf0d2d20b#<192 hex chars>
-\_________________________________ signed message _________________________________/\__ signature __/
+MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-08-27#Ma. Blue Heaven, Male, Maldives#290d5eb82deaf087#<192 hex chars>
+\________________________________ signed message _________________________________/\__ signature __/
 ```
 
 The 16 hex characters before the signature are the portrait's 64-bit perceptual
 hash. Everything before the signature is signed as one string with BLS12-381,
 then the whole thing is compressed with LZString and drawn as a QR code:
-305 characters in, 276 bytes out, a version 11 symbol.
+302 characters in, 266 bytes out, a version 10 symbol.
+
+The fields are positional, which is why the version prefix matters. `MV1` had a
+phone number where `MV2` has the expiry date, so a reader that accepted both
+would label a phone number as an expiry date. `parseMessage()` refuses any
+version but the current one rather than guessing.
 
 Because `#` separates fields it can never appear inside one. Rather than
 inventing an escaping scheme, `sanitizeField()` strips it at input time along
@@ -181,9 +198,11 @@ stating plainly:
 
 - **The signing key is in this repository.** Anyone can mint a card the bundled
   scanner accepts. A real issuer keeps that key in an HSM and never exports it.
-- **No revocation and no expiry.** A signature says "this was issued", never
-  "this is still valid". A card reported stolen still verifies. Any real
-  deployment needs a status check, which necessarily means being online.
+- **No revocation.** The expiry date closes part of this gap — an out-of-date
+  card is refused offline, because the date is inside the signature and cannot be
+  edited. It does nothing for a card reported stolen the day after it was issued,
+  which still verifies perfectly. That needs a status check, which necessarily
+  means being online.
 - **The portrait check compares a photograph to a photograph.** It confirms the
   picture on the card is the signed one. It does not confirm that the person
   holding the card is the person in the picture; that is a job for a human
@@ -192,9 +211,9 @@ stating plainly:
   designed to survive re-photographing, which means it tolerates change by
   construction. Treat it as a tamper check, not a proof of identity.
 - **Nothing is encrypted.** Anyone who scans the card reads every field —
-  exactly as they could by looking at it. Whether a phone number and home
-  address belong in a machine-readable code that any passer-by can scan is a
-  policy question this repository does not answer.
+  exactly as they could by looking at it. Whether a home address belongs in a
+  machine-readable code that any passer-by can scan is a policy question this
+  repository does not answer.
 
 ## Credits
 

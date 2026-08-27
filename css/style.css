@@ -12,9 +12,9 @@
 	--line: #dbe1e8;
 	--line-strong: #c3ccd6;
 
-	--accent: #0d6d63;
-	--accent-strong: #0a544c;
-	--accent-wash: #e4f2f0;
+	--accent: #1a56b0;
+	--accent-strong: #0c3b7c;
+	--accent-wash: #e8f0fb;
 	--danger: #b3261e;
 	--danger-wash: #fce9e7;
 	--warn: #8a5a00;
@@ -91,7 +91,7 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.85em; }
 	width: 26px;
 	height: 26px;
 	border-radius: 7px;
-	background: linear-gradient(140deg, var(--accent), #12968a);
+	background: linear-gradient(140deg, var(--accent), #3b7dd8);
 	display: grid;
 	place-items: center;
 	color: #fff;
@@ -131,7 +131,12 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.85em; }
 
 @media (max-width: 900px) {
 	.layout-split { grid-template-columns: minmax(0, 1fr); }
-	:root { --card-scale: 1.4; }
+	/* Fit the ID-1 face in the viewport so type reads at card-relative size. */
+	:root { --card-scale: 1.15; }
+}
+
+@media (max-width: 420px) {
+	:root { --card-scale: calc((100vw - 2rem) / 85.6mm); }
 }
 
 /* ------------------------------------------------------------------ *
@@ -286,62 +291,100 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 	flex: none;
 }
 
+/*
+ * Card face, EU / ICAO TD1 inspired: deep blue header and footer bands, a
+ * high-contrast outer frame so camera software can find the card edge, and
+ * white field zones that stay readable after print-and-rescan.
+ */
 .id-card {
 	position: relative;
 	width: var(--card-w);
 	height: var(--card-h);
 	transform: scale(var(--card-scale));
 	transform-origin: 0 0;
-	background: #fff;
-	border-radius: 3mm;
+	background: #f7f9fc;
+	border-radius: 2.2mm;
 	overflow: hidden;
 	box-shadow: var(--shadow-card);
-	color: #14202b;
+	color: #0e1a2b;
 	font-family: var(--sans);
-	/* A guilloche-ish security tint. Purely decorative. */
 	background-image:
-		repeating-linear-gradient(115deg, rgb(13 109 99 / 4%) 0 0.35mm, transparent 0.35mm 1.6mm),
-		repeating-linear-gradient(-115deg, rgb(179 38 30 / 3%) 0 0.35mm, transparent 0.35mm 2.1mm);
+		repeating-linear-gradient(118deg, rgb(12 59 124 / 5%) 0 0.3mm, transparent 0.3mm 1.55mm),
+		repeating-linear-gradient(-118deg, rgb(26 86 176 / 3.5%) 0 0.3mm, transparent 0.3mm 2mm),
+		linear-gradient(#f7f9fc, #f7f9fc);
+}
+
+/* Drawn as an overlay so it does not shrink the content box — portrait and QR
+ * millimetre rectangles must stay exact for the scanner's homography. */
+.id-card::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border: 1.15mm solid #0c3b7c;
+	border-radius: inherit;
+	pointer-events: none;
+	z-index: 6;
+	box-sizing: border-box;
 }
 
 .id-card__header {
 	position: absolute;
-	inset: 0 0 auto 0;
-	height: 10.5mm;
-	background: linear-gradient(100deg, var(--accent-strong), #12968a);
+	left: 0;
+	right: 0;
+	top: 0;
+	height: 11mm;
+	background: linear-gradient(100deg, #0a3268 0%, #0c3b7c 45%, #1a56b0 100%);
 	color: #fff;
 	display: flex;
 	align-items: center;
-	gap: 2mm;
-	padding: 0 3.5mm;
+	gap: 2.2mm;
+	padding: 0 3.2mm;
+}
+
+.id-card__header::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 0.55mm;
+	background: #f0c419;
 }
 
 .id-card__emblem {
-	width: 6mm;
-	height: 6mm;
+	width: 6.8mm;
+	height: 6.8mm;
 	flex: none;
 	border-radius: 50%;
-	border: 0.3mm solid rgb(255 255 255 / 65%);
+	border: 0.35mm solid rgb(255 255 255 / 80%);
+	background: rgb(255 255 255 / 12%);
 	display: grid;
 	place-items: center;
-	font-size: 2.6mm;
-	font-weight: 700;
+	font-size: 2.8mm;
+	font-weight: 750;
 	letter-spacing: 0.02em;
 }
 
 .id-card__country {
-	font-size: 2.5mm;
-	font-weight: 700;
-	letter-spacing: 0.09em;
+	/*
+	 * ICAO Doc 9303 recommends ~10 characters per 25.4 mm for VIZ data
+	 * (about 2.5 mm pitch) and captions of 1.0–1.8 mm. Values below target the
+	 * readable end of that range for an ID-1 face read at arm's length or on a
+	 * phone screen showing the whole card.
+	 */
+	font-size: 2.95mm;
+	font-weight: 750;
+	letter-spacing: 0.08em;
 	text-transform: uppercase;
-	line-height: 1.1;
+	line-height: 1.05;
 }
 
 .id-card__type {
-	font-size: 1.9mm;
+	font-size: 2.15mm;
 	letter-spacing: 0.05em;
-	opacity: 0.9;
+	opacity: 0.94;
 	line-height: 1.2;
+	font-weight: 550;
 }
 
 .id-card__portrait {
@@ -351,9 +394,10 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 	width: var(--portrait-w);
 	height: var(--portrait-h);
 	object-fit: cover;
-	background: #dfe4ea;
-	border: 0.25mm solid rgb(0 0 0 / 18%);
-	border-radius: 0.8mm;
+	background: #d5dbe6;
+	border: 0.55mm solid #0c3b7c;
+	border-radius: 0.4mm;
+	box-sizing: border-box;
 }
 
 .id-card__portrait-empty {
@@ -366,51 +410,82 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 	place-items: center;
 	text-align: center;
 	font-size: 1.8mm;
-	color: #8a95a1;
-	background: #e8ecf1;
-	border: 0.25mm dashed #b6bfc9;
-	border-radius: 0.8mm;
+	color: #6b7788;
+	background: #e4e9f1;
+	border: 0.55mm dashed #7a8aa0;
+	border-radius: 0.4mm;
+	box-sizing: border-box;
 	padding: 1mm;
 }
 
 .id-card__idno {
 	position: absolute;
 	left: var(--portrait-x);
-	top: calc(var(--portrait-y) + var(--portrait-h) + 1.2mm);
+	top: calc(var(--portrait-y) + var(--portrait-h) + 1.0mm);
 	width: var(--portrait-w);
 	text-align: center;
 	font-family: var(--mono);
-	font-size: 2.6mm;
-	font-weight: 700;
+	font-size: 3.15mm;
+	font-weight: 750;
 	letter-spacing: 0.06em;
+	color: #0c3b7c;
+	line-height: 1.1;
 }
 
 .id-card__fields {
 	position: absolute;
 	left: 27mm;
-	top: 13.5mm;
-	width: 27mm;
+	top: 13.0mm;
+	/* Stop before the QR quiet zone so values never paint into the code. */
+	width: calc(var(--qr-x) - var(--qr-quiet) - 27mm);
+	max-width: 27mm;
 	display: flex;
 	flex-direction: column;
-	gap: 1.1mm;
+	gap: 1.15mm;
+	overflow: hidden;
 }
 
 .id-card__field-label {
-	font-size: 1.65mm;
-	letter-spacing: 0.08em;
+	font-size: 1.7mm;
+	letter-spacing: 0.09em;
 	text-transform: uppercase;
-	color: #6d7883;
-	line-height: 1.1;
+	color: #0c3b7c;
+	font-weight: 700;
+	line-height: 1.15;
+	margin-bottom: 0.15mm;
 }
 
 .id-card__field-value {
-	font-size: 2.35mm;
-	font-weight: 620;
-	line-height: 1.15;
+	font-size: 2.85mm;
+	font-weight: 650;
+	line-height: 1.18;
 	word-break: break-word;
+	overflow-wrap: anywhere;
+	color: #0e1a2b;
+	hyphens: auto;
 }
 
-.id-card__field-value--small { font-size: 2.05mm; font-weight: 560; }
+.id-card__field-value--small {
+	font-size: 2.45mm;
+	font-weight: 600;
+	line-height: 1.2;
+}
+
+.id-card__fields-row {
+	display: flex;
+	gap: 2mm;
+	align-items: flex-start;
+}
+
+.id-card__fields-row > div {
+	min-width: 0;
+	flex: 1 1 0;
+}
+
+/* Expiry is the wider of the pair; give it more of the column. */
+.id-card__fields-row > div:last-child {
+	flex: 1.6 1 0;
+}
 
 .id-card__qr {
 	position: absolute;
@@ -422,7 +497,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 	background: #fff;
 }
 
-/* Keeps the QR's mandatory clear space free of ink. */
+/* Keeps the QR's mandatory clear space free of ink; navy outline marks the zone. */
 .id-card__qr-zone {
 	position: absolute;
 	left: calc(var(--qr-x) - var(--qr-quiet));
@@ -430,33 +505,50 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 	width: calc(var(--qr-w) + var(--qr-quiet) * 2);
 	height: calc(var(--qr-h) + var(--qr-quiet) * 2);
 	background: #fff;
-	border-radius: 0.8mm;
+	border: 0.35mm solid #0c3b7c;
+	border-radius: 0.5mm;
+	box-sizing: border-box;
 }
 
 .id-card__qr-caption {
 	position: absolute;
 	left: var(--qr-x);
-	top: calc(var(--qr-y) + var(--qr-h) + 1.4mm);
+	top: calc(var(--qr-y) + var(--qr-h) + 1.1mm);
 	width: var(--qr-w);
 	text-align: center;
-	font-size: 1.6mm;
-	letter-spacing: 0.04em;
-	color: #6d7883;
+	font-size: 1.75mm;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	color: #0c3b7c;
+	font-weight: 650;
 }
 
 .id-card__footer {
 	position: absolute;
-	left: 3.5mm;
-	right: 3.5mm;
-	bottom: 1.6mm;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 4.6mm;
+	padding: 0 3.2mm;
 	display: flex;
+	align-items: center;
 	justify-content: space-between;
-	font-size: 1.55mm;
+	gap: 2mm;
+	font-size: 1.7mm;
 	letter-spacing: 0.03em;
-	color: #8a95a1;
+	color: rgb(255 255 255 / 94%);
+	background: #0c3b7c;
+	font-weight: 600;
+	line-height: 1.1;
 }
 
-.id-card--placeholder { filter: grayscale(0.4); opacity: 0.75; }
+.id-card__footer span {
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.id-card--placeholder { filter: grayscale(0.35); opacity: 0.78; }
 
 /* ------------------------------------------------------------------ *
  * Verdicts and status

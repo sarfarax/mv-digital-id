@@ -20,6 +20,8 @@
 			<a href="issuer.html">Issue</a>
 			<a href="scanner.html">Verify</a>
 			<a href="tests.html">Tests</a>
+			<a href="proposal.html">Proposal</a>
+			<a href="deck.html">Deck</a>
 		</nav>
 	</div>
 </header>
@@ -52,13 +54,18 @@
 			<h2>Run the tests</h2>
 			<p>Exercise the whole pipeline in the browser, including forged cards and skewed camera angles.</p>
 		</a>
+		<a class="tile" href="proposal.html">
+			<div class="tile__step">Stakeholders</div>
+			<h2>Read the proposal</h2>
+			<p>A detailed paper and slide deck comparing the current card, this design, and the announced Smart ID.</p>
+		</a>
 	</div>
 
 	<div class="layout-split">
 		<section class="panel">
 			<div class="panel__head"><h2>What the QR code contains</h2></div>
 			<p>Everything before the signature is what gets signed:</p>
-			<pre class="mono-block">MV1#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#+960 771 2345#Ma. Blue Heaven, Male, Maldives#30b2e6c3d32d0bf4#&lt;signature&gt;</pre>
+			<pre class="mono-block">MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-08-27#Ma. Blue Heaven, Male, Maldives#290d5eb82deaf087#&lt;signature&gt;</pre>
 			<p style="margin-top: 0.9rem;">
 				The trailing 16 hex characters before the signature are the portrait&rsquo;s 64-bit
 				perceptual hash. That single field is what ties the photograph to the data: alter
@@ -66,7 +73,7 @@
 			</p>
 			<p>
 				The whole string is compressed with LZString and drawn as a QR code, which lands
-				around 276 bytes &mdash; a version 11 symbol.
+				around 266 bytes &mdash; a version 10 symbol.
 			</p>
 		</section>
 
@@ -75,6 +82,7 @@
 			<ol class="flow">
 				<li>The verifier finds the QR code in a camera frame and decompresses the payload.</li>
 				<li>The BLS signature is checked against the issuer&rsquo;s published public key. If it fails, nothing else matters.</li>
+				<li>The expiry date is read from the signed payload and compared with today. It is inside the signature, so it cannot be edited to extend a card&rsquo;s life.</li>
 				<li>jsQR reports the QR&rsquo;s four corners. Because the card is a rigid, fixed layout, those corners determine where the portrait must be.</li>
 				<li>The portrait is lifted out of the frame with perspective and rotation removed, then normalised to the same 300&times;400 grayscale raster the issuer hashed.</li>
 				<li>Its perceptual hash is compared with the signed one. A handful of differing bits is ordinary camera noise; a large difference means a different face.</li>
@@ -90,7 +98,7 @@
 		</p>
 		<ul style="color: var(--ink-soft); margin: 0; padding-left: 1.2rem;">
 			<li>The demo signing key is committed to this repository, so anyone can mint a card that this scanner accepts. A real issuer keeps that key in hardware.</li>
-			<li>There is no revocation, no expiry date, and no way to tell a reported-stolen card from a valid one. A signature says only &ldquo;this was issued&rdquo;, never &ldquo;this is still good&rdquo;.</li>
+			<li>The expiry date is checked offline, but there is no revocation: a card reported stolen the day after issue still verifies. A signature says only &ldquo;this was issued&rdquo;, never &ldquo;this is still good&rdquo;.</li>
 			<li>The portrait check compares a photograph to a photograph. It confirms the picture on the card is the signed one; it does not confirm the person holding the card is the person in the picture. That is a job for a human or for face recognition, neither of which is here.</li>
 			<li>Nothing in the payload is encrypted. Anyone who scans the card can read every field, exactly as they could by looking at it.</li>
 		</ul>

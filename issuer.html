@@ -19,6 +19,9 @@
 			<a href="index.html">Overview</a>
 			<a href="issuer.html" aria-current="page">Issue</a>
 			<a href="scanner.html">Verify</a>
+			<a href="tests.html">Tests</a>
+			<a href="proposal.html">Proposal</a>
+			<a href="deck.html">Deck</a>
 		</nav>
 	</div>
 </header>
@@ -78,10 +81,10 @@
 							<span class="field__error" data-error-for="dob"></span>
 						</div>
 
-						<div class="field" data-field="phone">
-							<label for="phone">Phone</label>
-							<input id="phone" name="phone" autocomplete="off" placeholder="+960 771 2345" maxlength="20">
-							<span class="field__error" data-error-for="phone"></span>
+						<div class="field" data-field="expiry">
+							<label for="expiry">Expiry date</label>
+							<input id="expiry" name="expiry" type="date">
+							<span class="field__error" data-error-for="expiry"></span>
 						</div>
 
 						<div class="field field--wide" data-field="address">
@@ -92,7 +95,7 @@
 					</div>
 
 					<div class="actions" style="margin-top: 0.9rem;">
-						<button type="button" class="btn-ghost btn-small" id="loadSample">Load sample cardholder</button>
+						<button type="button" class="btn-ghost btn-small" id="loadSample">Load sample</button>
 					</div>
 				</form>
 			</section>
@@ -105,6 +108,8 @@
 				<p class="panel__hint">
 					Drag to reposition and use the slider to zoom. The 3:4 frame is what gets printed
 					on the card and what gets hashed &mdash; nothing outside it is bound to the signature.
+					<strong>Load sample</strong> uses an example face from the
+					<a href="https://imuga.immigration.gov.mv/passport/photo-standards" target="_blank" rel="noopener">Maldives Immigration passport photo standards</a>.
 				</p>
 
 				<div class="stack">
@@ -228,19 +233,19 @@
 								<div class="id-card__field-label">Name</div>
 								<div class="id-card__field-value" id="cardName">&mdash;</div>
 							</div>
-							<div style="display: flex; gap: 3mm;">
+							<div class="id-card__fields-row">
 								<div>
 									<div class="id-card__field-label">Sex</div>
 									<div class="id-card__field-value" id="cardSex">&mdash;</div>
 								</div>
 								<div>
-									<div class="id-card__field-label">Date of Birth</div>
-									<div class="id-card__field-value" id="cardDob">&mdash;</div>
+									<div class="id-card__field-label">Expires</div>
+									<div class="id-card__field-value" id="cardExpiry">&mdash;</div>
 								</div>
 							</div>
 							<div>
-								<div class="id-card__field-label">Phone</div>
-								<div class="id-card__field-value" id="cardPhone">&mdash;</div>
+								<div class="id-card__field-label">Date of Birth</div>
+								<div class="id-card__field-value" id="cardDob">&mdash;</div>
 							</div>
 							<div>
 								<div class="id-card__field-label">Permanent Address</div>

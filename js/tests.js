@@ -29,6 +29,7 @@ import {
 	splitBarcodeData,
 	encodeBarcode,
 	readAndVerify,
+	expiryStatus,
 	ENCODING_BINARY,
 	ENCODING_TEXT
 } from './payload.js';
@@ -102,22 +103,34 @@ function makeCanvas(width, height) {
 function renderCard(portraitSource, qr, pixelsPerMm = 12) {
 	const canvas = makeCanvas(Math.round(CARD.width * pixelsPerMm), Math.round(CARD.height * pixelsPerMm));
 	const ctx = canvas.getContext('2d');
+	const navy = '#0c3b7c';
+	const navyDeep = '#0a3268';
 
-	ctx.fillStyle = '#ffffff';
+	ctx.fillStyle = navy;
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctx.fillStyle = '#f7f9fc';
+	ctx.fillRect(1.15 * pixelsPerMm, 1.15 * pixelsPerMm,
+		canvas.width - 2.3 * pixelsPerMm, canvas.height - 2.3 * pixelsPerMm);
 
-	ctx.fillStyle = '#0a544c';
-	ctx.fillRect(0, 0, canvas.width, 10.5 * pixelsPerMm);
+	ctx.fillStyle = navyDeep;
+	ctx.fillRect(0, 0, canvas.width, 11 * pixelsPerMm);
+	ctx.fillStyle = '#f0c419';
+	ctx.fillRect(0, 11 * pixelsPerMm - 0.55 * pixelsPerMm, canvas.width, 0.55 * pixelsPerMm);
+
 	ctx.fillStyle = '#ffffff';
-	ctx.font = `700 ${2.6 * pixelsPerMm}px system-ui, sans-serif`;
-	ctx.fillText('REPUBLIC OF MALDIVES', 3.5 * pixelsPerMm, 6.4 * pixelsPerMm);
+	ctx.font = `700 ${2.95 * pixelsPerMm}px system-ui, sans-serif`;
+	ctx.fillText('REPUBLIC OF MALDIVES', 3.5 * pixelsPerMm, 4.6 * pixelsPerMm);
+	ctx.font = `550 ${2.15 * pixelsPerMm}px system-ui, sans-serif`;
+	ctx.fillStyle = '#d2e0f5';
+	ctx.fillText('NATIONAL IDENTITY CARD', 3.5 * pixelsPerMm, 8.0 * pixelsPerMm);
 
-	ctx.fillStyle = '#14202b';
-	ctx.font = `${2.2 * pixelsPerMm}px system-ui, sans-serif`;
-	ctx.fillText('NAME', 27 * pixelsPerMm, 17 * pixelsPerMm);
-	ctx.fillText('DATE OF BIRTH', 27 * pixelsPerMm, 24 * pixelsPerMm);
-	ctx.fillText('PERMANENT ADDRESS', 27 * pixelsPerMm, 31 * pixelsPerMm);
-
+	ctx.fillStyle = navy;
+	ctx.fillRect(
+		PORTRAIT_RECT.x * pixelsPerMm - 2,
+		PORTRAIT_RECT.y * pixelsPerMm - 2,
+		PORTRAIT_RECT.width * pixelsPerMm + 4,
+		PORTRAIT_RECT.height * pixelsPerMm + 4
+	);
 	ctx.drawImage(
 		portraitSource,
 		PORTRAIT_RECT.x * pixelsPerMm,
@@ -126,11 +139,24 @@ function renderCard(portraitSource, qr, pixelsPerMm = 12) {
 		PORTRAIT_RECT.height * pixelsPerMm
 	);
 
-	// Quiet zone, then the symbol itself with no border of its own so it fills
-	// QR_RECT exactly.
+	ctx.fillStyle = navy;
+	ctx.font = `700 ${3.15 * pixelsPerMm}px ui-monospace, monospace`;
+	ctx.fillText(CARDHOLDER.idNumber, 27 * pixelsPerMm, 17 * pixelsPerMm);
+	ctx.font = `700 ${1.7 * pixelsPerMm}px system-ui, sans-serif`;
+	ctx.fillText('NAME', 27 * pixelsPerMm, 20.5 * pixelsPerMm);
+	ctx.fillText('DATE OF BIRTH', 27 * pixelsPerMm, 27 * pixelsPerMm);
+	ctx.fillText('PERMANENT ADDRESS', 27 * pixelsPerMm, 33.5 * pixelsPerMm);
+
 	const qrCanvas = makeCanvas(1, 1);
 	qr.drawCanvas(8, 0, qrCanvas);
 
+	ctx.fillStyle = navy;
+	ctx.fillRect(
+		(QR_RECT.x - 2.5) * pixelsPerMm - 1,
+		(QR_RECT.y - 2.5) * pixelsPerMm - 1,
+		(QR_RECT.width + 5) * pixelsPerMm + 2,
+		(QR_RECT.height + 5) * pixelsPerMm + 2
+	);
 	ctx.fillStyle = '#ffffff';
 	ctx.fillRect(
 		(QR_RECT.x - 2.5) * pixelsPerMm,
@@ -147,6 +173,9 @@ function renderCard(portraitSource, qr, pixelsPerMm = 12) {
 		QR_RECT.height * pixelsPerMm
 	);
 	ctx.imageSmoothingEnabled = true;
+
+	ctx.fillStyle = navy;
+	ctx.fillRect(0, canvas.height - 4.2 * pixelsPerMm, canvas.width, 4.2 * pixelsPerMm);
 
 	return canvas;
 }
@@ -216,12 +245,15 @@ function decodeFrom(canvas) {
  * The run
  * ------------------------------------------------------------------ */
 
+// Relative so the fixtures keep their meaning however long this sits unrun.
+const isoDaysFromNow = days => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+
 const CARDHOLDER = {
 	idNumber: 'A123456',
 	name: 'Aishath Nasheeda Ibrahim',
 	sex: 'F',
 	dob: '1991-04-17',
-	phone: '+960 771 2345',
+	expiry: isoDaysFromNow(3650),
 	address: 'Ma. Blue Heaven, Male, Maldives'
 };
 
@@ -231,10 +263,9 @@ async function run() {
 	summaryEl.innerHTML = '';
 	results.length = 0;
 
-	const [personA, personB, recaptured] = await Promise.all([
-		loadImage('samples/portrait-a.png'),
-		loadImage('samples/portrait-b.png'),
-		loadImage('samples/portrait-a-recaptured.png')
+	const [personA, personB] = await Promise.all([
+		loadImage('samples/portrait-2.jpg'),
+		loadImage('samples/portrait-1.jpg')
 	]);
 
 	/* ---------------- perceptual hash ---------------- */
@@ -242,7 +273,27 @@ async function run() {
 
 	const portraitA = canonicalPortrait(personA, centreCrop(personA.naturalWidth, personA.naturalHeight));
 	const portraitB = canonicalPortrait(personB, centreCrop(personB.naturalWidth, personB.naturalHeight));
-	const portraitARecaptured = canonicalPortrait(recaptured, centreCrop(recaptured.naturalWidth, recaptured.naturalHeight));
+
+	// Mild synthetic recapture: brightness + noise on the canonical raster.
+	const recaptureCanvas = makeCanvas(portraitA.canvas.width, portraitA.canvas.height);
+	{
+		const ctx = recaptureCanvas.getContext('2d');
+		ctx.filter = 'brightness(0.92) contrast(1.05)';
+		ctx.drawImage(portraitA.canvas, 0, 0);
+		ctx.filter = 'none';
+		const pixels = ctx.getImageData(0, 0, recaptureCanvas.width, recaptureCanvas.height);
+		for (let i = 0; i < pixels.data.length; i += 4) {
+			const n = ((i * 1103515245 + 12345) >>> 16) & 31;
+			pixels.data[i] = Math.max(0, Math.min(255, pixels.data[i] + n - 15));
+			pixels.data[i + 1] = pixels.data[i];
+			pixels.data[i + 2] = pixels.data[i];
+		}
+		ctx.putImageData(pixels, 0, 0);
+	}
+	const portraitARecaptured = {
+		canvas: recaptureCanvas,
+		imageData: recaptureCanvas.getContext('2d').getImageData(0, 0, recaptureCanvas.width, recaptureCanvas.height)
+	};
 
 	const hashA = pHashHex(portraitA.imageData);
 	const hashB = pHashHex(portraitB.imageData);
@@ -352,6 +403,38 @@ async function run() {
 			record('forged portrait is rejected', distance > MATCH_THRESHOLD, `distance ${distance}`);
 		}
 	}
+
+	/* ---------------- an expired card ---------------- */
+	group('Expired card: correctly signed, out of date');
+
+	const expiredHolder = { ...CARDHOLDER, expiry: isoDaysFromNow(-30) };
+	const expiredMessage = buildMessage(expiredHolder, hashA);
+	const expiredSignature = await signMessage(expiredMessage, DEMO_SECRET_KEY);
+	const expiredEncoded = encodeBarcode(joinBarcodeData(expiredMessage, expiredSignature), ENCODING_BINARY);
+	const expiredCard = renderCard(portraitA.canvas, expiredEncoded.qr);
+	showStage('Expired card', expiredCard);
+
+	const expiredScan = decodeFrom(expiredCard);
+	if (record('QR readable on the expired card', Boolean(expiredScan.code))) {
+		const verified = await readAndVerify(expiredScan.code, ISSUER.publicKey);
+		record('signature is genuinely valid', verified.ok === true,
+			'nothing cryptographic is wrong with an expired card');
+
+		const recovered = portraitFromCardPhoto(expiredScan.imageData, expiredScan.code.location);
+		if (recovered) {
+			const distance = hammingDistance(verified.photoHash, pHashHex(recovered.imageData));
+			record('portrait matches too', distance <= MATCH_THRESHOLD, `distance ${distance}`);
+		}
+
+		const status = expiryStatus(verified.fields?.expiry);
+		record('expiry check rejects it anyway', status.state === 'expired',
+			`expired ${verified.fields?.expiry}`);
+	}
+
+	record('an in-date card passes the expiry check',
+		expiryStatus(CARDHOLDER.expiry).state === 'valid', CARDHOLDER.expiry);
+	record('a card expiring today is still valid',
+		expiryStatus(isoDaysFromNow(0)).state === 'valid', isoDaysFromNow(0));
 
 	/* ---------------- tampered payload ---------------- */
 	group('Tampered payload');

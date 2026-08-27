@@ -13,7 +13,7 @@ import {
 	QR_RECT
 } from './card.js';
 import { pHashHex, hammingDistance, HASH_BITS } from './phash.js';
-import { readAndVerify, chunkHex } from './payload.js';
+import { readAndVerify, chunkHex, expiryStatus } from './payload.js';
 import { ISSUER } from './issuer-key.js';
 
 applyCardGeometry();
@@ -23,6 +23,9 @@ const $ = id => document.getElementById(id);
 // Detection resolution. Large enough that the portrait region lands near its
 // canonical 300px width, small enough to decode at video frame rate.
 const MAX_SCAN_WIDTH = 1280;
+
+// A card this close to expiry still passes, but an operator should be told.
+const EXPIRY_WARNING_DAYS = 90;
 
 const dom = {
 	overallVerdict: $('overallVerdict'),
@@ -219,18 +222,37 @@ function renderOverallVerdict() {
 		return;
 	}
 
+	const expiry = signatureOk ? expiryStatus(signature.fields?.expiry) : null;
+
 	if (!signatureOk) {
 		kind = 'fail';
 		title = 'Card rejected';
 		detail = signature.error ?? 'The signature check failed.';
+	} else if (expiry.state === 'expired') {
+		/*
+		 * Deliberately ranked above the portrait check. A signature only ever
+		 * says "this was issued"; an expired card is genuine and unusable at the
+		 * same time, and matching the photograph does not change that.
+		 */
+		kind = 'fail';
+		title = 'Card expired';
+		detail = `The signature is authentic, but the card expired on ${formatDate(signature.fields.expiry)}. It is no longer valid identification.`;
+	} else if (expiry.state === 'unreadable') {
+		kind = 'fail';
+		title = 'Card rejected';
+		detail = 'The signature is authentic, but the expiry date is not a readable calendar date, so the card cannot be accepted.';
 	} else if (!hasPhoto) {
 		kind = 'warn';
 		title = 'Signature valid, portrait not yet checked';
-		detail = 'The printed details are authentic. Capture the portrait to confirm the photograph was not swapped.';
+		detail = 'The printed details are authentic and the card is in date. Capture the portrait to confirm the photograph was not swapped.';
 	} else if (photoOk) {
 		kind = 'pass';
 		title = 'Card verified';
 		detail = `The details are authentic and the portrait matches the signed hash (${distance} of ${HASH_BITS} bits differ).`;
+		if (expiry.daysRemaining <= EXPIRY_WARNING_DAYS) {
+			kind = 'warn';
+			detail += ` The card is still valid but expires in ${expiry.daysRemaining} day${expiry.daysRemaining === 1 ? '' : 's'}.`;
+		}
 	} else {
 		kind = 'fail';
 		title = 'Portrait does not match';
@@ -254,7 +276,7 @@ function renderIdentity(result) {
 	$('outName').textContent = fields.name || '—';
 	$('outSex').textContent = fields.sex || '—';
 	$('outDob').textContent = formatDate(fields.dob);
-	$('outPhone').textContent = fields.phone || '—';
+	$('outExpiry').textContent = formatDate(fields.expiry);
 	$('outAddress').textContent = fields.address || '—';
 
 	if (!result) {
@@ -467,7 +489,7 @@ function drawDetection(ctx, code, { scale = 1, offsetX = 0, offsetY = 0, lineWid
 		ctx.stroke();
 	};
 
-	stroke(quad, '#13c2b0');
+	stroke(quad, '#3b7dd8');
 
 	const h = homography(rectCorners(QR_RECT), [
 		code.location.topLeftCorner,

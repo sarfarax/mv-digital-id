@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Making the National Identity Card Verifiable · Proposal</title>
+<meta name="description" content="A proposal to make the Maldivian national identity card cryptographically verifiable using a signed QR code, deployable with the next print run and complementary to the Smart ID card and eFaas.">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/proposal.css">
+</head>
+<body>
+
+<header class="site-header">
+	<div class="site-header__inner">
+		<a class="brand" href="index.html">
+			<span class="brand__mark" aria-hidden="true">MV</span>
+			<span>Maldives Digital ID</span>
+		</a>
+		<nav class="site-nav">
+			<a href="index.html">Overview</a>
+			<a href="issuer.html">Issue</a>
+			<a href="scanner.html">Verify</a>
+			<a href="tests.html">Tests</a>
+			<a href="proposal.html" aria-current="page">Proposal</a>
+			<a href="deck.html">Deck</a>
+		</nav>
+	</div>
+</header>
+
+<main class="doc">
+
+	<div class="doc__cover">
+		<div class="doc__eyebrow">Technical proposal</div>
+		<h1 class="doc__title">Making the National Identity Card Verifiable</h1>
+		<p class="doc__subtitle">
+			A cryptographically signed QR code that binds the printed details and the
+			cardholder&rsquo;s photograph to the issuing authority &mdash; deployable with the
+			next print run, verifiable offline on any phone.
+		</p>
+		<dl class="doc__meta">
+			<dt>Prepared for</dt>
+			<dd>Department of National Registration; Maldives Digital Service; Ministry of Homeland Security, Labour and Technology</dd>
+			<dt>Subject</dt>
+			<dd>Strengthening the physical national identity card within the Maldives 2.0 programme</dd>
+			<dt>Status</dt>
+			<dd>Working prototype with a complete reference implementation and test suite</dd>
+			<dt>Version</dt>
+			<dd>1.0</dd>
+		</dl>
+	</div>
+
+	<nav class="toc">
+		<h2>Contents</h2>
+		<ol>
+			<li><a href="#problem">The problem</a></li>
+			<li><a href="#context">National context</a></li>
+			<li><a href="#proposal">The proposal</a></li>
+			<li><a href="#how">How it works</a></li>
+			<li><a href="#issuance">Issuance</a></li>
+			<li><a href="#verification">Verification</a></li>
+			<li><a href="#comparison">Comparison</a></li>
+			<li><a href="#security">Security analysis</a></li>
+			<li><a href="#roadmap">Deployment roadmap</a></li>
+			<li><a href="#cost">Cost</a></li>
+			<li><a href="#governance">Governance and privacy</a></li>
+			<li><a href="#risks">Risks</a></li>
+			<li><a href="#recommendation">Recommendation</a></li>
+		</ol>
+	</nav>
+
+	<section class="summary-box">
+		<h2>Executive summary</h2>
+		<p>
+			The Maldivian national identity card is checked constantly &mdash; at banks,
+			police checkpoints, ferry counters, clinics and workplaces &mdash; yet nothing
+			on it can actually be verified. A teller, an officer or a clerk decides whether
+			a card is genuine by looking at it. That is a judgement about printing quality,
+			not a verification of fact, and it fails against any forger with a decent printer.
+		</p>
+		<p>
+			This proposal adds one element to the card: a QR code carrying the printed
+			details plus a compact fingerprint of the cardholder&rsquo;s photograph, all signed
+			with the issuing authority&rsquo;s cryptographic key. Any phone can then confirm, in
+			about a tenth of a second and with no internet connection, that the details were
+			issued by the Department of National Registration, that they have not been
+			altered since, that the photograph on the card is the one that was signed, and
+			that the card is still in date.
+		</p>
+		<p>
+			The change is deliberately small. Card stock, layout, issuance workflow and
+			legal basis all stay as they are. No card is recalled: cards gain the QR as they
+			are naturally reissued. Verification needs no reader, no app install, no account
+			and no connectivity &mdash; it is a web page and a camera.
+		</p>
+		<p>
+			<strong>This complements rather than competes with the announced Smart ID card
+			and with eFaas.</strong> A chip verifies nothing until readers are deployed
+			nationwide, and eFaas requires enrolment, a smartphone and connectivity. This
+			layer covers the case neither reaches: an in-person, offline check by anyone,
+			anywhere, starting now. It fills the gap until 2027&ndash;2028, and it keeps
+			earning its place afterwards as the fallback for the islands where readers and
+			bandwidth arrive last.
+		</p>
+	</section>
+
+	<h2 id="problem">The problem</h2>
+
+	<p>
+		The Department of National Registration has issued national identity cards since
+		1984 and serves a resident population the Maldives Bureau of Statistics projects
+		at 590,079 for 2026, of whom 394,054 are Maldivian citizens.<sup><a href="#r1">1</a></sup> The card is mandatory
+		for citizens under the Civil Registration and Issuance of Birth Certificates and
+		National Identity Cards Act (Law No. 23/2022), and it is the document on which
+		banking, travel, employment, land allocation, healthcare and voting all depend.
+	</p>
+
+	<p>
+		Every one of those transactions rests on a visual judgement. The person checking
+		the card compares it against a remembered impression of what a real card looks
+		like. There is no mechanism to establish that the name printed on a card is the
+		name the state issued, or that the photograph is the one the state attached to that
+		record.
+	</p>
+
+	<h3>This is not hypothetical</h3>
+
+	<p>
+		Maldivian courts treat document forgery as a serious offence under Chapter 15 of
+		the Penal Code, and the judiciary has observed that such cases are increasing, with
+		government institutions and the Maldives Police Service identifying them as a
+		priority.<sup><a href="#r2">2</a></sup> In one MVR 8 million illegal recruitment and
+		money laundering case, a search of the principal&rsquo;s devices recovered digital
+		copies of forged work permit documents, passport photographs of foreign workers and
+		<em>identity cards of Maldivians</em>, alongside credentials used to access
+		government administrative systems.<sup><a href="#r3">3</a></sup> Twelve people have
+		separately been charged over forged registry documents used to claim land under the
+		Binveriya housing scheme.<sup><a href="#r4">4</a></sup>
+	</p>
+
+	<p>
+		A forged identity card is rarely the objective. It is the instrument used to reach
+		something else: a permit, a bank account, a plot of land, a benefit. Making the card
+		itself checkable removes the instrument.
+	</p>
+
+	<div class="callout">
+		<span class="callout__label">The core weakness</span>
+		<p>
+			Nothing binds the photograph to the data. Even if the printed text could be
+			trusted, a genuine card with a substituted photograph would pass any inspection
+			that does not include the original record. The photograph is the one element
+			that connects a document to a human being, and it is the element with no
+			protection at all.
+		</p>
+	</div>
+
+	<h2 id="context">National context</h2>
+
+	<p>
+		The Maldives is already committed to a substantial identity modernisation. Any
+		proposal must fit inside that programme rather than cut across it.
+	</p>
+
+	<table>
+		<thead>
+			<tr><th>Initiative</th><th>Status</th><th>Timeline</th></tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>Maldives 2.0</td>
+				<td>Launched 9 May 2025 as a three-year digital transformation programme</td>
+				<td>Full implementation targeted 26 July 2028<sup><a href="#r5">5</a></sup></td>
+			</tr>
+			<tr>
+				<td>eFaas</td>
+				<td>Live national digital identity and OpenID Connect single sign-on, operated by NCIT / Maldives Digital Service</td>
+				<td>In public preview; 272,000+ users aged 10 and above, around 80% of the eligible population<sup><a href="#r6">6</a></sup></td>
+			</tr>
+			<tr>
+				<td>Digital Identity Bill</td>
+				<td>Approved by parliament alongside the Maldives 2.0 Digital Transformation Bill, referred to the ICT Committee</td>
+				<td>July 2026<sup><a href="#r7">7</a></sup></td>
+			</tr>
+			<tr>
+				<td>Smart ID card</td>
+				<td>Announced: microchip, fingerprint authentication and payment functions</td>
+				<td>&ldquo;Within 18 months&rdquo; of August 2026<sup><a href="#r6">6</a></sup></td>
+			</tr>
+			<tr>
+				<td>Integrated digital identity system</td>
+				<td>Planned, following the Smart ID rollout</td>
+				<td>2027<sup><a href="#r7">7</a></sup></td>
+			</tr>
+		</tbody>
+	</table>
+	<p class="caption">The identity modernisation programme this proposal sits inside.</p>
+
+	<h3>The gap</h3>
+
+	<p>
+		Both flagship efforts are strong, and both leave the same case uncovered. eFaas is
+		an online authentication system: it proves who you are to a website, given a
+		smartphone, an enrolment and a working connection. The Smart ID card will carry a
+		chip and a fingerprint, but a chip proves nothing until a reader is present, and
+		readers must be procured, deployed, powered, maintained and integrated at every
+		point where identity is checked.
+	</p>
+
+	<p>
+		Meanwhile the ordinary case &mdash; a person handing a plastic card across a counter
+		to another person &mdash; remains a visual guess. It will remain a visual guess for
+		the eighteen months to two years before Smart ID reaches scale, and it will remain
+		one afterwards anywhere a reader has not been installed.
+	</p>
+
+	<div class="callout">
+		<span class="callout__label">Where this wins</span>
+		<p>
+			The government&rsquo;s stated aim is to let citizens access services from any
+			island and to eliminate costly inter-island travel. The islands that make that
+			aim urgent are precisely the ones where chip readers and reliable bandwidth will
+			arrive last. A check that needs only a camera and no network is strongest exactly
+			where the alternatives are weakest.
+		</p>
+	</div>
+
+	<h2 id="proposal">The proposal</h2>
+
+	<p>
+		Add a QR code to the card. It contains the six printed fields, a 64-bit perceptual
+		hash of the cardholder&rsquo;s photograph, and a digital signature over all of it
+		produced by the issuing authority&rsquo;s private key.
+	</p>
+
+	<div class="mono-block">MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-08-27#Ma. Blue Heaven, Male, Maldives#290d5eb82deaf087#&lt;signature&gt;</div>
+
+	<p>
+		That is the entire change to the artefact. Nothing else about the card &mdash; its
+		dimensions, stock, security printing, layout, the issuance process or the legal
+		framework &mdash; needs to move.
+	</p>
+
+	<figure class="figure">
+		<img src="samples/card-genuine.png?v=blue" alt="Proposed Maldivian national identity card with navy frame, portrait, fields and signed QR code">
+		<figcaption>
+			The proposed card face, in an ICAO-style navy layout with a high-contrast outer
+			frame so a camera can find the edges. Illustrative mockup with a real sample
+			portrait and synthetic cardholder data; not an official artefact. The QR occupies
+			a 25&nbsp;mm square and encodes 266&nbsp;bytes as a version&nbsp;10 symbol
+			(0.385&nbsp;mm per module).
+		</figcaption>
+	</figure>
+
+	<p>Four things become checkable that are not checkable today:</p>
+
+	<ol>
+		<li><strong>Authenticity.</strong> The signature verifies only against the authority&rsquo;s published public key. A card produced by anyone else fails.</li>
+		<li><strong>Integrity.</strong> Altering any printed field breaks the signature, because every field is inside it.</li>
+		<li><strong>Photo binding.</strong> Replacing the photograph changes its perceptual hash, which no longer matches the signed one.</li>
+		<li><strong>Validity period.</strong> The expiry date is inside the signature, so it cannot be edited to extend a card&rsquo;s life.</li>
+	</ol>
+
+	<h2 id="how">How it works</h2>
+
+	<h3>Digital signatures</h3>
+
+	<p>
+		The signed message is the version prefix, the six printed fields and the photo hash
+		joined into one string. It is signed with BLS12-381, a pairing-friendly elliptic
+		curve used in production by major blockchain and aggregate-signature systems. The
+		signature is 96 bytes; the public key is 48 bytes.
+	</p>
+
+	<p>
+		The security property that matters is asymmetry. The Department of National
+		Registration holds a private key and can produce signatures. Everyone else holds
+		only the public key and can therefore <em>check</em> signatures but never create
+		them. Publishing the public key nationally costs nothing and enables everyone;
+		it grants no ability to issue.
+	</p>
+
+	<h3>Binding the photograph</h3>
+
+	<p>
+		A cryptographic hash cannot be used on a photograph, because a photograph that has
+		been printed and re-photographed is never bit-identical to the original and a
+		cryptographic hash would reject it. The card therefore carries a
+		<em>perceptual</em> hash: an implementation of the DCT-based algorithm published by
+		pHash.org, which reduces an image to 64 bits describing its low-frequency structure.
+	</p>
+
+	<p>
+		Two pictures of the same face produce nearly the same bits; two different faces do
+		not. The comparison is a Hamming distance &mdash; a count of differing bits &mdash;
+		against a configurable tolerance. Measured on the reference implementation:
+	</p>
+
+	<div class="stat-row">
+		<div class="stat"><div class="stat__value">0</div><div class="stat__label">bits differ, genuine card scanned flat</div></div>
+		<div class="stat"><div class="stat__value">2</div><div class="stat__label">bits differ, genuine card photographed at an angle under noise</div></div>
+		<div class="stat"><div class="stat__value">22</div><div class="stat__label">bits differ, substituted face</div></div>
+		<div class="stat"><div class="stat__value">12</div><div class="stat__label">default acceptance threshold</div></div>
+	</div>
+
+	<p>
+		The margin is wide in both directions: genuine captures sit far below the threshold
+		even when degraded, and a different face sits far above it.
+	</p>
+
+	<h3>Finding the photograph without a scanner</h3>
+
+	<p>
+		The verifier must locate and normalise the portrait before hashing it. Because the
+		card is a rigid layout with fixed geometry, and because QR decoders report the four
+		corners of the symbol they found, those corners are enough. The verifier computes a
+		homography from the QR corners, applies it to the known portrait rectangle, and
+		lifts the photograph out with perspective and rotation removed &mdash; then
+		normalises it to the same 300&times;400 greyscale raster the issuer hashed.
+	</p>
+
+	<p>
+		This is why a hand-held photograph of a card lying on a desk at an angle still
+		verifies. The geometry is recovered mathematically rather than demanded of the user.
+	</p>
+
+	<h3>Fitting it on the card</h3>
+
+	<p>
+		The payload is compressed before encoding. A complete signed record is 302
+		characters, compressing to 266 bytes, which encodes as a version 10 QR symbol of 57
+		modules. In the 25 mm square allocated on the card that is 0.385 mm per module
+		&mdash; comfortable for commercial card printing and well within the range of a
+		modern phone camera.
+	</p>
+
+	<h2 id="issuance">Issuance</h2>
+
+	<p>
+		The DNR already operates a decentralised issuance network of 31 print centres and
+		183 collection centres, plus overseas missions.<sup><a href="#r8">8</a></sup> The
+		proposal changes what those print centres print, not how they operate.
+	</p>
+
+	<ol>
+		<li><strong>Key ceremony.</strong> Generate the national signing key inside a hardware security module under documented multi-party control. The private key never leaves the HSM.</li>
+		<li><strong>Publish the public key.</strong> On a government domain, in the Gazette, and embedded in verifier applications. It is not secret.</li>
+		<li><strong>Integrate at the point of personalisation.</strong> When a card record is finalised, the system hashes the approved portrait, assembles the message, requests a signature from the HSM and renders the QR into the card template.</li>
+		<li><strong>Print as normal.</strong> The QR is ink. It adds no consumable, no chip, no encoding step and no per-card hardware.</li>
+		<li><strong>Reissue naturally.</strong> Cards gain the QR as they are renewed, replaced or newly issued. No recall is required, and the two populations coexist indefinitely.</li>
+	</ol>
+
+	<div class="callout callout--caution">
+		<span class="callout__label">Key custody is the whole ballgame</span>
+		<p>
+			The security of every card ever issued reduces to the secrecy of one private
+			key. It must live in certified hardware, with split control, audit logging and a
+			rehearsed rotation procedure. The reference implementation ships a demonstration
+			key in public source code precisely so that nobody mistakes it for a production
+			system.
+		</p>
+	</div>
+
+	<h2 id="verification">Verification</h2>
+
+	<p>
+		The verifier is a web page. It runs entirely in the browser: no backend call, no
+		account, no data leaves the device. The sequence is:
+	</p>
+
+	<ol>
+		<li>Locate and decode the QR in the camera frame, then decompress the payload.</li>
+		<li>Check the signature against the trusted public key. If this fails, nothing else matters.</li>
+		<li>Check the expiry date, which is inside the signature.</li>
+		<li>Recover the portrait using the QR corners and the card&rsquo;s fixed geometry.</li>
+		<li>Re-hash it and compare with the signed hash.</li>
+	</ol>
+
+	<p>Measured end to end on a desktop-class machine against the sample card:</p>
+
+	<div class="stat-row">
+		<div class="stat"><div class="stat__value">51 ms</div><div class="stat__label">QR location and decode</div></div>
+		<div class="stat"><div class="stat__value">27 ms</div><div class="stat__label">signature verification</div></div>
+		<div class="stat"><div class="stat__value">23 ms</div><div class="stat__label">portrait recovery and hashing</div></div>
+		<div class="stat"><div class="stat__value">102 ms</div><div class="stat__label">total, median of ten runs</div></div>
+	</div>
+
+	<p class="caption">
+		Measured in a Chromium browser on a twelve-core desktop against a 1370&times;864
+		card image. A mid-range phone should be expected to take several times longer;
+		the operative point is that the result is immediate at human timescales, not that
+		the specific figure transfers.
+	</p>
+
+	<h3>What an operator sees</h3>
+
+	<div class="verdict verdict--pass" style="margin-bottom:0.6rem;">
+		<div class="verdict__icon">&#10003;</div>
+		<div>
+			<div class="verdict__title">Card verified</div>
+			<div class="verdict__detail">The details are authentic and the portrait matches the signed hash (0 of 64 bits differ).</div>
+		</div>
+	</div>
+
+	<div class="verdict verdict--fail" style="margin-bottom:0.6rem;">
+		<div class="verdict__icon">&#10005;</div>
+		<div>
+			<div class="verdict__title">Card rejected</div>
+			<div class="verdict__detail">The signature does not match. The data has been altered or was not issued by this authority.</div>
+		</div>
+	</div>
+
+	<div class="verdict verdict--fail" style="margin-bottom:0.6rem;">
+		<div class="verdict__icon">&#10005;</div>
+		<div>
+			<div class="verdict__title">Portrait does not match</div>
+			<div class="verdict__detail">The signature is valid, but the photograph differs from the one the authority signed (22 of 64 bits differ).</div>
+		</div>
+	</div>
+
+	<div class="verdict verdict--fail">
+		<div class="verdict__icon">&#10005;</div>
+		<div>
+			<div class="verdict__title">Card expired</div>
+			<div class="verdict__detail">The signature is authentic, but the card expired on 26 Aug 2024. It is no longer valid identification.</div>
+		</div>
+	</div>
+
+	<p class="caption" style="margin-top:0.6rem;">
+		The four outcomes, reproduced live from the reference verifier. Each corresponds to
+		a sample card in the repository and to an automated test.
+	</p>
+
+	<h3>Deployment of the verifier</h3>
+
+	<p>
+		Because it is a static web page, distribution is trivial: a government URL, an
+		optional installable progressive web app for offline use, or embedding inside
+		existing apps such as eFaas or a bank&rsquo;s. The public key can be pinned in the
+		build so that an offline device still verifies correctly.
+	</p>
+
+	<h2 id="comparison">Comparison</h2>
+
+	<table>
+		<thead>
+			<tr>
+				<th>Property</th>
+				<th>Card today</th>
+				<th>Signed QR</th>
+				<th>Chip card</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr><td>Detects a forged card</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+			<tr><td>Detects altered printed data</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+			<tr><td>Detects a substituted photograph</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+			<tr><td>Works with no reader hardware</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+			<tr><td>Works with no internet connection</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="partial">Reader dependent</td></tr>
+			<tr><td>Verifiable by any member of the public</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td></tr>
+			<tr><td>Marginal cost per card</td><td>&mdash;</td><td class="yes">Effectively zero</td><td class="no">Chip, encoding and logistics</td></tr>
+			<tr><td>Requires replacing every card</td><td>&mdash;</td><td class="yes">No, reissue naturally</td><td class="no">Yes</td></tr>
+			<tr><td>Supports revocation of a stolen card</td><td class="no">No</td><td class="no">Not offline</td><td class="partial">With online check</td></tr>
+			<tr><td>Confirms the bearer is the holder</td><td class="no">No</td><td class="partial">Photo binding only</td><td class="yes">Fingerprint</td></tr>
+			<tr><td>Supports payments and online authentication</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td></tr>
+			<tr><td>Available</td><td>&mdash;</td><td class="yes">Next print run</td><td class="partial">Target 2028</td></tr>
+		</tbody>
+	</table>
+	<p class="caption">
+		The chip card is stronger where it is deployed and does things this cannot,
+		notably fingerprint matching and payments. The columns are complementary, not
+		alternatives: the honest reading is that the middle column is what the right-hand
+		column cannot be until readers exist everywhere.
+	</p>
+
+	<h2 id="security">Security analysis</h2>
+
+	<h3>What this defeats</h3>
+
+	<table>
+		<thead><tr><th>Attack</th><th>Outcome</th></tr></thead>
+		<tbody>
+			<tr><td>Wholly fabricated card</td><td>No valid signature can be produced without the private key. Rejected.</td></tr>
+			<tr><td>Altering a name, address or date of birth</td><td>Every field is inside the signature. Rejected.</td></tr>
+			<tr><td>Replacing the photograph on a genuine card</td><td>Signature still valid; the perceptual hash no longer matches. Rejected at the portrait step.</td></tr>
+			<tr><td>Extending the validity of an expired card</td><td>Expiry is inside the signature. Rejected.</td></tr>
+			<tr><td>Copying a valid QR onto a different card</td><td>The QR carries the identity and photo hash of its original holder, so the printed face and the signed data diverge. Rejected.</td></tr>
+			<tr><td>A card signed by a different authority</td><td>Verification is against one pinned public key. Rejected.</td></tr>
+		</tbody>
+	</table>
+
+	<h3>What this does not defeat</h3>
+
+	<div class="callout callout--limit">
+		<span class="callout__label">Stated plainly</span>
+		<ul>
+			<li><strong>No revocation offline.</strong> A signature says &ldquo;this was issued&rdquo;, never &ldquo;this is still valid&rdquo;. A card reported stolen the day after issue still verifies. Only an online status check closes this, and that necessarily requires connectivity.</li>
+			<li><strong>It confirms the picture, not the person.</strong> The portrait check proves the photograph on the card is the signed one. It does not prove the bearer is the person in the photograph. That remains a human judgement, exactly as it is today, unless biometric matching is added.</li>
+			<li><strong>Private key compromise is catastrophic.</strong> An attacker with the signing key can mint cards indistinguishable from genuine ones. This is the argument for an HSM and for a rehearsed key rotation plan.</li>
+			<li><strong>Nothing is encrypted.</strong> Anyone who scans the card reads every field &mdash; exactly as they could by reading the card. Whether a home address belongs in a machine-readable code any passer-by can scan is a policy question, addressed in section 11.</li>
+			<li><strong>A genuine card presented by a look-alike.</strong> Perceptual hashing tolerates change by construction, so a sufficiently similar face could fall inside the threshold. The tolerance is configurable, and this is the specific weakness that face-vector matching would address.</li>
+		</ul>
+	</div>
+
+	<h3>Extension: face vector matching</h3>
+
+	<p>
+		A future card tier can additionally carry a compact binary code derived from a face
+		recognition embedding &mdash; a locality-sensitive hash, not a cryptographic one,
+		compared by Hamming distance in the same way. Published results place 128-bit
+		PCA-ITQ face templates at around 99% true-accept at 1% false-accept.<sup><a href="#r9">9</a></sup>
+		Sixteen bytes fits in the existing QR budget with room to spare.
+	</p>
+
+	<p>
+		That upgrade is what would let a verifier compare the signed template against a live
+		capture of the person standing there, turning a document check into an identity
+		check. It is designed as an optional tier so that standard cards remain fully valid.
+		It also raises materially larger privacy questions, since a biometric template is a
+		linkable identifier in a way that a photo hash is not.
+	</p>
+
+	<h2 id="roadmap">Deployment roadmap</h2>
+
+	<table>
+		<thead><tr><th>Phase</th><th>Work</th><th>Indicative duration</th></tr></thead>
+		<tbody>
+			<tr><td>1. Pilot</td><td>Independent security review, key ceremony design, print and camera trials against real card stock and real lighting, threshold calibration</td><td>2&ndash;3 months</td></tr>
+			<tr><td>2. Issuance integration</td><td>HSM procurement and installation, integration with the personalisation system at the print centres, operator training</td><td>3&ndash;4 months</td></tr>
+			<tr><td>3. Verifier release</td><td>Public verifier at a government domain, installable offline app, published public key, guidance for banks, police, immigration and health services</td><td>Parallel with phase 2</td></tr>
+			<tr><td>4. Rollout</td><td>New and renewed cards carry the QR; both populations coexist; adoption tracked by issuance volume</td><td>Continuous</td></tr>
+			<tr><td>5. Optional face tier</td><td>Model selection and projection training, privacy impact assessment, tiered issuance</td><td>Subsequent, subject to policy</td></tr>
+		</tbody>
+	</table>
+	<p class="caption">Durations are indicative and assume the reference implementation is used as the starting point rather than a fresh build.</p>
+
+	<h3>Coexistence with Smart ID</h3>
+
+	<p>
+		These are layers, not competitors, and the sensible end state runs both. The chip
+		serves high-assurance and transactional use &mdash; payments, fingerprint
+		verification, online authentication at institutions equipped to read it. The signed
+		QR serves universal offline visual verification, on the same card, for everyone
+		else. Printing a QR on the Smart ID card costs nothing and means the card still
+		proves something when the reader is broken, absent or out of power.
+	</p>
+
+	<h2 id="cost">Cost</h2>
+
+	<p>
+		The distinguishing economic feature is the absence of per-card marginal cost. A QR
+		code is ink on a card that is already being printed.
+	</p>
+
+	<table>
+		<thead><tr><th>Item</th><th>Nature</th></tr></thead>
+		<tbody>
+			<tr><td>Per-card cost</td><td>Effectively zero. No chip, no encoding hardware, no additional consumable.</td></tr>
+			<tr><td>Hardware security module</td><td>One-off procurement plus support. The single significant capital item.</td></tr>
+			<tr><td>Issuance integration</td><td>One-off software integration with the existing personalisation workflow.</td></tr>
+			<tr><td>Verifier</td><td>Static hosting. No backend, no per-verification cost, no scaling cost.</td></tr>
+			<tr><td>Reader hardware</td><td>None, at any verification point, ever.</td></tr>
+			<tr><td>Card replacement programme</td><td>None. Cards gain the QR through the normal reissue cycle.</td></tr>
+		</tbody>
+	</table>
+	<p class="caption">The cost profile is dominated by one-off integration rather than recurring or per-unit spend.</p>
+
+	<h2 id="governance">Governance and privacy</h2>
+
+	<p>
+		The Digital Identity Bill establishes a Digital Identity Technical Advisory
+		Committee and sets out the duties of identity providers and the safeguards governing
+		personal data.<sup><a href="#r7">7</a></sup> This proposal fits naturally within that
+		framework and would benefit from being considered under it.
+	</p>
+
+	<ul>
+		<li><strong>No new data is collected.</strong> The QR contains exactly what is already printed on the face of the card, plus a hash of the photograph that is already on the card.</li>
+		<li><strong>No new database.</strong> Verification is offline and stateless. There is no central log of who checked whose card, and therefore no surveillance surface to govern.</li>
+		<li><strong>The photo hash is not a photograph.</strong> Sixty-four bits cannot reconstruct an image; it can only be compared against a candidate.</li>
+		<li><strong>Machine readability is the real question.</strong> The address is printed on the card today, but a QR makes it bulk-collectable by anyone with a camera. Options include omitting the address from the payload at some cost to verification coverage, or accepting it as equivalent to what is already visible. This is a policy decision, not a technical one.</li>
+		<li><strong>The face tier would change this analysis.</strong> A biometric template is a linkable identifier and would warrant a full privacy impact assessment under ISO/IEC 24745 principles before adoption.</li>
+	</ul>
+
+	<h2 id="risks">Risks</h2>
+
+	<table>
+		<thead><tr><th>Risk</th><th>Mitigation</th></tr></thead>
+		<tbody>
+			<tr><td>Signing key compromise</td><td>HSM with split control, audit logging, rehearsed rotation, and a schema that already carries a version prefix so a re-key can be distinguished.</td></tr>
+			<tr><td>Genuine cards rejected in poor conditions</td><td>Threshold calibration during the pilot against real printed stock; the tolerance is configurable and the signature check is unaffected by lighting.</td></tr>
+			<tr><td>QR damaged by wear</td><td>Error correction is built into the QR standard; the level can be raised at the cost of a denser symbol. Visual inspection remains available as a fallback.</td></tr>
+			<tr><td>Operators over-trusting a pass result</td><td>Verifier wording states what each result does and does not prove. Training must stress that a valid card says nothing about the bearer.</td></tr>
+			<tr><td>Perceived duplication with Smart ID</td><td>Position explicitly as the offline layer of the same programme, printed on the Smart ID card itself when that arrives.</td></tr>
+			<tr><td>Public confusion between card generations</td><td>Both populations verify correctly; the verifier reports which generation it read. No flag day is required.</td></tr>
+		</tbody>
+	</table>
+
+	<h2 id="recommendation">Recommendation</h2>
+
+	<p>
+		Authorise a time-boxed pilot. The engineering is complete and demonstrable: a
+		reference implementation of issuance and verification exists, is fully tested, and
+		is available for inspection. What it has not had is contact with real card stock,
+		real cameras, real lighting and an adversarial security review. That is what a pilot
+		buys, and it is inexpensive to buy.
+	</p>
+
+	<p>Concretely, the decisions sought are:</p>
+
+	<ol>
+		<li>Approve a pilot with the Department of National Registration and the Maldives Digital Service.</li>
+		<li>Commission an independent security review of the scheme and its reference implementation.</li>
+		<li>Authorise HSM procurement and a documented key ceremony.</li>
+		<li>Agree the policy position on which fields belong in a machine-readable payload.</li>
+		<li>Direct that the Smart ID card specification reserve space for a printed signed QR, so the offline layer survives the transition.</li>
+	</ol>
+
+	<p>
+		The argument for acting now is simply that the alternative is to leave the card
+		unverifiable for another two years while the chip programme matures. The cost of
+		closing that gap is one integration and one HSM, and the capability does not become
+		redundant when the chip arrives.
+	</p>
+
+	<div class="doc__appendices">
+
+		<h2 id="appendix-payload">Payload format</h2>
+
+		<p>Fields are joined with <code>#</code>, following the convention of the signed-QR-code scheme this implementation is based on:</p>
+
+		<div class="mono-block">MV2#&lt;idNumber&gt;#&lt;name&gt;#&lt;sex&gt;#&lt;dob&gt;#&lt;expiry&gt;#&lt;address&gt;#&lt;photoHash&gt;#&lt;signature&gt;
+\________________________ signed message ________________________/</div>
+
+		<ul>
+			<li><strong>Version prefix</strong> &mdash; identifies the field layout. Readers refuse versions they do not know rather than guessing at positional fields.</li>
+			<li><strong>Six printed fields</strong> &mdash; ID number, name, sex, date of birth, expiry date and permanent address.</li>
+			<li><strong>photoHash</strong> &mdash; 64-bit perceptual hash of the normalised portrait, 16 hexadecimal characters.</li>
+			<li><strong>signature</strong> &mdash; BLS12-381 over everything preceding it, 96 bytes as 192 hexadecimal characters.</li>
+		</ul>
+
+		<p>
+			The complete string is compressed with LZString and encoded as a QR code in
+			binary byte mode. A URL-safe text mode is also supported for readers that mangle
+			raw bytes, at roughly a third more payload.
+		</p>
+
+		<h2 id="appendix-results">Measured results</h2>
+
+		<p>All figures below are produced by the reference implementation and reproducible from the repository.</p>
+
+		<table>
+			<thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+			<tbody>
+				<tr><td>Signed payload</td><td>302 characters, compressing to 266 bytes</td></tr>
+				<tr><td>QR symbol</td><td>Version 10, 57 modules, 0.385 mm per module at 25 mm</td></tr>
+				<tr><td>Signature size</td><td>96 bytes (192 hex characters)</td></tr>
+				<tr><td>Public key size</td><td>48 bytes (96 hex characters)</td></tr>
+				<tr><td>Verification, total</td><td>102 ms median, desktop browser</td></tr>
+				<tr><td>Portrait distance, flat scan</td><td>0 of 64 bits</td></tr>
+				<tr><td>Portrait distance, angled photograph with noise</td><td>2 of 64 bits</td></tr>
+				<tr><td>Portrait distance, substituted face</td><td>22 of 64 bits</td></tr>
+				<tr><td>Browser pipeline test suite</td><td>34 of 34 checks passing</td></tr>
+				<tr><td>Payload and cryptography test suite</td><td>31 of 31 checks passing</td></tr>
+			</tbody>
+		</table>
+
+		<p>
+			The test suite synthesises a card, photographs it at a simulated angle with
+			added noise and altered brightness, then decodes and verifies it exactly as the
+			verifier would &mdash; including forged, tampered and expired variants. It can be
+			run in any browser from <a href="tests.html">the tests page</a>.
+		</p>
+
+		<figure class="figure">
+			<div class="figure-grid">
+				<figure>
+					<img src="samples/card-genuine.png?v=blue" alt="Genuine sample card">
+					<figcaption>Genuine &mdash; accepted</figcaption>
+				</figure>
+				<figure>
+					<img src="samples/card-tampered.png?v=blue" alt="Tampered sample card">
+					<figcaption>Tampered name &mdash; signature fails</figcaption>
+				</figure>
+				<figure>
+					<img src="samples/card-forged.png?v=blue" alt="Forged sample card with substituted portrait">
+					<figcaption>Swapped face &mdash; portrait fails</figcaption>
+				</figure>
+				<figure>
+					<img src="samples/card-expired.png?v=blue" alt="Expired sample card">
+					<figcaption>Expired &mdash; date check fails</figcaption>
+				</figure>
+			</div>
+			<figcaption>
+				The four sample cards used throughout this proposal and the live demo.
+				Illustrative mockups with real sample portraits and synthetic cardholder data;
+				not official artefacts.
+			</figcaption>
+		</figure>
+
+		<h2 id="appendix-refs">References</h2>
+
+		<ol class="refs">
+			<li id="r1">Maldives Bureau of Statistics, <em>World Population Day 2026</em>. <a href="https://statisticsmaldives.gov.mv/mbs/wp-content/uploads/2026/07/WPD2026.pdf">statisticsmaldives.gov.mv</a></li>
+			<li id="r2">Sun Online International, &ldquo;Man remanded for 20 days in document forgery case&rdquo;, July 2026. <a href="https://english.sun.mv/107194">english.sun.mv/107194</a></li>
+			<li id="r3">Sun Online International, &ldquo;Expat who pocketed MVR 8M in illegal recruitment racket receives 2 years under plea deal&rdquo;. <a href="https://english.sun.mv/101521">english.sun.mv/101521</a></li>
+			<li id="r4">News Maldives Matters, &ldquo;Former MWSC Deputy MD Among 12 Charged in Binveriya Land Forgery Case&rdquo;, March 2026. <a href="https://news.maldivesmatters.com/2026/03/former-mwsc-deputy-md-among-12-charged.html">news.maldivesmatters.com</a></li>
+			<li id="r5">MMTV, &ldquo;Smart ID cards to be introduced within 18 months: President&rdquo;. <a href="https://en.mmtv.mv/11164">en.mmtv.mv/11164</a></li>
+			<li id="r6">PSM News, &ldquo;President says smart ID card to launch within 18 months&rdquo;. <a href="https://psmnews.mv/en/185023">psmnews.mv/en/185023</a></li>
+			<li id="r7">Biometric Update, &ldquo;Maldives advances digital identity, digital transformation bills&rdquo;, July 2026. <a href="https://www.biometricupdate.com/202607/maldives-advances-digital-identity-digital-transformation-bills">biometricupdate.com</a></li>
+			<li id="r8">Department of National Registration. <a href="https://dnr.gov.mv/?lang=en">dnr.gov.mv</a></li>
+			<li id="r9">&ldquo;Bit Stability and Hash-Length Trade-Offs in Binary Face Templates&rdquo;, <em>IJACSA</em> 16(11), 2025. <a href="https://doi.org/10.14569/ijacsa.2025.0161192">doi.org/10.14569/ijacsa.2025.0161192</a></li>
+			<li id="r10">eFaas, National Digital Identity of the Maldives. <a href="https://efaas.egov.mv/">efaas.egov.mv</a></li>
+		</ol>
+
+	</div>
+
+	<footer>
+		<p>
+			This document accompanies a working reference implementation. The
+			<a href="issuer.html">issuer</a> and <a href="scanner.html">verifier</a> are both
+			runnable in a browser, and the <a href="tests.html">test suite</a> exercises the
+			full pipeline including forged, tampered and expired cards. All cards and
+			cardholder details shown are illustrative mockups with real sample portraits and
+			synthetic data; the
+			signing key used in the demonstration is public and is not suitable for any
+			production use.
+		</p>
+	</footer>
+
+</main>
+
+</body>
+</html>

@@ -66,7 +66,7 @@ const dom = {
 	cardName: $('cardName'),
 	cardSex: $('cardSex'),
 	cardDob: $('cardDob'),
-	cardPhone: $('cardPhone'),
+	cardExpiry: $('cardExpiry'),
 	cardAddress: $('cardAddress'),
 	cardQr: $('cardQr'),
 	cardIssuer: $('cardIssuer'),
@@ -90,12 +90,25 @@ const state = {
 	issued: null       // the last successfully signed card
 };
 
+// Maldivian ID cards run for ten years. Deriving the sample's expiry from the
+// current date rather than hard-coding one keeps the sample issuable forever.
+const CARD_VALIDITY_YEARS = 10;
+
+function defaultExpiry(from = new Date()) {
+	const date = new Date(Date.UTC(
+		from.getUTCFullYear() + CARD_VALIDITY_YEARS,
+		from.getUTCMonth(),
+		from.getUTCDate()
+	));
+	return date.toISOString().slice(0, 10);
+}
+
 const SAMPLE = {
 	idNumber: 'A123456',
 	name: 'Aishath Nasheeda Ibrahim',
 	sex: 'F',
 	dob: '1991-04-17',
-	phone: '+960 771 2345',
+	expiry: defaultExpiry(),
 	address: 'Ma. Blue Heaven, Male, Maldives'
 };
 
@@ -118,7 +131,7 @@ function showFieldErrors(errors) {
 	}
 }
 
-dom.loadSample.addEventListener('click', () => {
+dom.loadSample.addEventListener('click', async () => {
 	for (const [key, value] of Object.entries(SAMPLE)) {
 		const input = $(key);
 		if (input) input.value = value;
@@ -126,7 +139,29 @@ dom.loadSample.addEventListener('click', () => {
 	showFieldErrors({});
 	updateCardPreview();
 	invalidateIssued('Details changed. Sign again to refresh the QR code.');
+
+	try {
+		await loadSamplePortrait();
+		setStatus(dom.generateStatus, 'Sample cardholder and portrait loaded. Press Sign & encode when ready.', null);
+	} catch (error) {
+		console.warn('Could not load the sample portrait:', error);
+		setStatus(dom.generateStatus, 'Sample details loaded, but the portrait could not be fetched. Choose an image manually.', 'error');
+	}
 });
+
+/**
+ * Fetch the bundled sample face and run it through the normal portrait
+ * pipeline so "Load sample" needs no separate file picker.
+ * Source: Maldives Immigration passport photo standards examples —
+ * https://imuga.immigration.gov.mv/passport/photo-standards
+ */
+async function loadSamplePortrait() {
+	const response = await fetch('samples/portrait-2.jpg');
+	if (!response.ok) throw new Error(`Sample portrait HTTP ${response.status}`);
+	const blob = await response.blob();
+	const file = new File([blob], 'portrait-2.jpg', { type: blob.type || 'image/jpeg' });
+	loadPhoto(file);
+}
 
 dom.form.addEventListener('input', () => {
 	updateCardPreview();
@@ -135,9 +170,9 @@ dom.form.addEventListener('input', () => {
 
 function formatDate(iso) {
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso || '—';
+	// Compact VIZ form keeps dates inside the field column beside the QR.
 	const [y, m, d] = iso.split('-');
-	const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-	return `${d} ${months[Number(m) - 1] ?? m} ${y}`;
+	return `${d}.${m}.${y}`;
 }
 
 function updateCardPreview() {
@@ -146,7 +181,7 @@ function updateCardPreview() {
 	dom.cardName.textContent = fields.name || '—';
 	dom.cardSex.textContent = fields.sex || '—';
 	dom.cardDob.textContent = formatDate(fields.dob);
-	dom.cardPhone.textContent = fields.phone || '—';
+	dom.cardExpiry.textContent = formatDate(fields.expiry);
 	dom.cardAddress.textContent = fields.address || '—';
 }
 
@@ -361,7 +396,8 @@ function setStatus(element, text, kind) {
 
 function invalidateIssued(reason) {
 	state.issued = null;
-	dom.cardState.textContent = 'Out of date';
+	// Not "out of date", which now means an expired card rather than a stale QR.
+	dom.cardState.textContent = 'Needs re-signing';
 	dom.cardState.className = 'badge badge--warn';
 	dom.idCard.classList.add('id-card--placeholder');
 	dom.selfVerify.disabled = true;

@@ -21,6 +21,7 @@ import {
 	readAndVerify,
 	sanitizeField,
 	validateFields,
+	expiryStatus,
 	ENCODING_BINARY,
 	ENCODING_TEXT
 } from '../js/payload.js';
@@ -32,12 +33,15 @@ function check(label, ok, detail = '') {
 	console.log(`  [${ok ? 'PASS' : 'FAIL'}] ${label.padEnd(52)} ${detail}`);
 }
 
+// Expiry is relative so the fixture never rots into an invalid cardholder.
+const isoDaysFromNow = days => new Date(Date.now() + days * 86400000).toISOString().slice(0, 10);
+
 const cardholder = {
 	idNumber: 'A123456',
 	name: 'Aishath Nasheeda Ibrahim',
 	sex: 'F',
 	dob: '1991-04-17',
-	phone: '+960 771 2345',
+	expiry: isoDaysFromNow(3650),
 	address: 'Ma. Blue Heaven, Male, Maldives'
 };
 const photoHash = '30b2e6c3d32d0bf4';
@@ -55,6 +59,15 @@ check('valid cardholder passes validation', validateFields(cardholder).valid);
 check('bad ID number is rejected', !validateFields({ ...cardholder, idNumber: '12345' }).valid);
 check('bad date of birth is rejected', !validateFields({ ...cardholder, dob: '17/04/1991' }).valid);
 check('future date of birth is rejected', !validateFields({ ...cardholder, dob: '2999-01-01' }).valid);
+check('impossible calendar date is rejected', !validateFields({ ...cardholder, dob: '1991-02-30' }).valid);
+check('past expiry date is rejected at issue', !validateFields({ ...cardholder, expiry: isoDaysFromNow(-1) }).valid);
+check('malformed expiry date is rejected', !validateFields({ ...cardholder, expiry: '17/04/2035' }).valid);
+
+console.log('\nexpiry status:');
+check('a future expiry reads as valid', expiryStatus(isoDaysFromNow(30)).state === 'valid');
+check('a past expiry reads as expired', expiryStatus(isoDaysFromNow(-30)).state === 'expired');
+check("today's expiry is still valid", expiryStatus(new Date().toISOString().slice(0, 10)).state === 'valid');
+check('an unparsable expiry is flagged', expiryStatus('not-a-date').state === 'unreadable');
 
 console.log('\nsigning:');
 const message = buildMessage(cardholder, photoHash);

@@ -1,10 +1,17 @@
 /*
  * Render ready-made sample cards. Run with: node tools/make-card.mjs
  *
- * Produces a genuine card and a forgery of it, so the scanner can be tried
- * without a camera or a printer: drop samples/card-genuine.png on the verify
- * page and it should pass, drop samples/card-forged.png and the signature
- * still passes while the portrait check fails.
+ * Produces four cards, so the scanner can be tried without a camera or a
+ * printer. Drop samples/card-genuine.png on the verify page and it should pass;
+ * samples/card-forged.png keeps the signature valid but fails the portrait
+ * check; samples/card-expired.png passes both and is still refused for being
+ * out of date; samples/card-tampered.png fails the signature.
+ *
+ * Portraits come from the real photographs in samples/portrait-*.jpg, exported
+ * to greyscale 300x400 dumps (portrait-a.rgba / portrait-b.rgba) so hashing
+ * matches the card that is printed. Those JPEGs are examples from Maldives
+ * Immigration passport photo standards:
+ * https://imuga.immigration.gov.mv/passport/photo-standards
  *
  * The card is rasterised directly rather than screenshotting the DOM, which
  * keeps this runnable from the command line. Only two things have to be exact:
@@ -14,7 +21,7 @@
 
 import './browser-shim.mjs';
 import { deflateSync } from 'node:zlib';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,14 +35,21 @@ const PX_PER_MM = 16;
 const WIDTH = Math.round(CARD.width * PX_PER_MM);
 const HEIGHT = Math.round(CARD.height * PX_PER_MM);
 
+function shiftYears(years, from = new Date()) {
+	return new Date(Date.UTC(from.getUTCFullYear() + years, from.getUTCMonth(), from.getUTCDate()))
+		.toISOString().slice(0, 10);
+}
+
 const CARDHOLDER = {
 	idNumber: 'A123456',
 	name: 'Aishath Nasheeda Ibrahim',
 	sex: 'F',
 	dob: '1991-04-17',
-	phone: '+960 771 2345',
+	expiry: shiftYears(10),
 	address: 'Ma. Blue Heaven, Male, Maldives'
 };
+
+const EXPIRED_CARDHOLDER = { ...CARDHOLDER, expiry: shiftYears(-2) };
 
 /* ------------------------------ PNG output ------------------------------ */
 
@@ -157,95 +171,85 @@ function textWidth(text, scale) {
 	return text.length * 6 * scale;
 }
 
+/** Pixel height of one glyph row at the given scale (5×7 font). */
+function textHeight(scale) {
+	return 7 * scale;
+}
+
+/**
+ * Word-wrap for the bitmap font. Long tokens are hard-broken so names and
+ * addresses stay inside the VIZ column when type is enlarged for print.
+ */
+function wrapText(text, scale, maxWidthPx) {
+	const words = String(text).toUpperCase().split(/\s+/).filter(Boolean);
+	const lines = [];
+	let current = '';
+
+	const pushHardBroken = (token) => {
+		let chunk = '';
+		for (const character of token) {
+			const next = chunk + character;
+			if (chunk && textWidth(next, scale) > maxWidthPx) {
+				lines.push(chunk);
+				chunk = character;
+			} else {
+				chunk = next;
+			}
+		}
+		current = chunk;
+	};
+
+	for (const word of words) {
+		const next = current ? `${current} ${word}` : word;
+		if (!current || textWidth(next, scale) <= maxWidthPx) {
+			current = next;
+			continue;
+		}
+		lines.push(current);
+		if (textWidth(word, scale) > maxWidthPx) pushHardBroken(word);
+		else current = word;
+	}
+	if (current) lines.push(current);
+	return lines.length ? lines : [''];
+}
+
+function drawWrapped(surface, text, x, y, scale, colour, maxWidthPx, lineGapPx = scale) {
+	const lines = wrapText(text, scale, maxWidthPx);
+	let cursorY = y;
+	for (const line of lines) {
+		drawText(surface, line, x, cursorY, scale, colour);
+		cursorY += textHeight(scale) + lineGapPx;
+	}
+	return cursorY;
+}
+
 /* ------------------------------ Portraits ------------------------------ */
 
-function mulberry32(seed) {
-	return function () {
-		seed |= 0;
-		seed = (seed + 0x6d2b79f5) | 0;
-		let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-		t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+function loadPortraitRgba(name) {
+	const buffer = readFileSync(join(OUT_DIR, name));
+	const width = buffer.readUInt32BE(0);
+	const height = buffer.readUInt32BE(4);
+	return {
+		width,
+		height,
+		data: new Uint8ClampedArray(buffer.buffer, buffer.byteOffset + 8, width * height * 4)
 	};
 }
 
-/*
- * The canonical 300x400 grayscale portrait, generated directly at its final
- * size. This is the exact raster that gets hashed and printed, so the browser
- * has nothing to reproduce and no resampling mismatch can creep in.
- */
-function canonicalPortrait({ seed, skinBase, backdrop, faceCx, faceCy, faceRx, faceRy, hairTone, eyeSkew, lightFrom }) {
-	const width = 300;
-	const height = 400;
-	const rnd = mulberry32(seed);
-	const grain = new Float64Array(width * height);
-	for (let i = 0; i < grain.length; i++) grain[i] = rnd();
-
-	const imageData = { data: new Uint8ClampedArray(width * height * 4), width, height };
-
-	for (let y = 0; y < height; y++) {
-		for (let x = 0; x < width; x++) {
-			const nx = x / width;
-			const ny = y / height;
-			let value = backdrop * (1 - 0.28 * ny) + 14;
-
-			const cx = width * faceCx;
-			const cy = height * faceCy;
-			const rx = width * faceRx;
-			const ry = height * faceRy;
-
-			if (y > height * 0.78 - 45 * Math.cos(((x - cx) / width) * 3.1)) value = 58;
-
-			const hx = (x - cx - width * 0.02) / (rx * 1.24);
-			const hy = (y - cy + ry * 0.34) / (ry * 1.18);
-			if (hx * hx + hy * hy < 1 && y < cy + ry * 0.45) value = hairTone;
-
-			const fx = (x - cx) / rx;
-			const fy = (y - cy) / ry;
-			const face = fx * fx + fy * fy;
-			if (face < 1) {
-				value = skinBase * (1 - 0.3 * face);
-				const eyeY = cy - ry * 0.16;
-				if (Math.hypot(x - (cx - rx * 0.36), y - eyeY) < rx * 0.13) value = 38;
-				if (Math.hypot(x - (cx + rx * 0.36 + eyeSkew), y - eyeY - eyeSkew * 0.4) < rx * 0.12) value = 38;
-				if (Math.abs(y - (eyeY - ry * 0.15)) < ry * 0.035 && Math.abs(x - cx) < rx * 0.62) value *= 0.45;
-				if (Math.abs(x - (cx + rx * 0.05)) < rx * 0.07 && y > cy - ry * 0.05 && y < cy + ry * 0.2) value *= 0.86;
-				if (Math.hypot((x - cx) / (rx * 0.34), (y - (cy + ry * 0.42)) / (ry * 0.09)) < 1) value = 104;
-			}
-
-			const light = 1 + 0.3 * (lightFrom === 'left' ? 1 - nx : nx) - 0.12 * ny;
-			const shade = Math.max(0, Math.min(255, value * light + (grain[y * width + x] - 0.5) * 9));
-
-			const p = (y * width + x) * 4;
-			imageData.data[p] = shade;
-			imageData.data[p + 1] = shade;
-			imageData.data[p + 2] = shade;
-			imageData.data[p + 3] = 255;
-		}
-	}
-
-	return imageData;
-}
-
+// Real photographs, centre-cropped to 3:4 and greyscaled to match the issuer.
 const PORTRAITS = {
-	a: canonicalPortrait({
-		seed: 17, skinBase: 186, backdrop: 190,
-		faceCx: 0.52, faceCy: 0.42, faceRx: 0.27, faceRy: 0.24,
-		hairTone: 38, eyeSkew: 5, lightFrom: 'left'
-	}),
-	b: canonicalPortrait({
-		seed: 91, skinBase: 128, backdrop: 204,
-		faceCx: 0.47, faceCy: 0.46, faceRx: 0.24, faceRy: 0.28,
-		hairTone: 22, eyeSkew: -4, lightFrom: 'right'
-	})
+	a: loadPortraitRgba('portrait-a.rgba'), // portrait-2.jpg — female sample cardholder
+	b: loadPortraitRgba('portrait-b.rgba')  // portrait-1.jpg — substituted face for forgery
 };
 
-// Bilinear upscale of a portrait into the card's portrait rectangle.
 function drawPortrait(surface, portrait, rect) {
 	const x0 = Math.round(rect.x * PX_PER_MM);
 	const y0 = Math.round(rect.y * PX_PER_MM);
 	const w = Math.round(rect.width * PX_PER_MM);
 	const h = Math.round(rect.height * PX_PER_MM);
+
+	// Navy frame around the portrait — a camera-readable boundary.
+	fillRect(surface, x0 - 2, y0 - 2, w + 4, h + 4, [12, 59, 124]);
 
 	for (let y = 0; y < h; y++) {
 		const sy = ((y + 0.5) / h) * portrait.height - 0.5;
@@ -276,6 +280,12 @@ function drawQr(surface, qr) {
 	const size = Math.round(QR_RECT.width * PX_PER_MM);
 
 	fillRect(surface,
+		(QR_RECT.x - QR_QUIET_ZONE) * PX_PER_MM - 1,
+		(QR_RECT.y - QR_QUIET_ZONE) * PX_PER_MM - 1,
+		(QR_RECT.width + QR_QUIET_ZONE * 2) * PX_PER_MM + 2,
+		(QR_RECT.height + QR_QUIET_ZONE * 2) * PX_PER_MM + 2,
+		[12, 59, 124]);
+	fillRect(surface,
 		(QR_RECT.x - QR_QUIET_ZONE) * PX_PER_MM,
 		(QR_RECT.y - QR_QUIET_ZONE) * PX_PER_MM,
 		(QR_RECT.width + QR_QUIET_ZONE * 2) * PX_PER_MM,
@@ -294,42 +304,78 @@ function drawQr(surface, qr) {
 	}
 }
 
-function renderCard(portrait, qr) {
-	const surface = createSurface(WIDTH, HEIGHT);
-	const teal = [10, 84, 76];
-	const ink = [20, 32, 43];
-	const grey = [109, 120, 131];
+function renderCard(portrait, qr, cardholder = CARDHOLDER) {
+	const surface = createSurface(WIDTH, HEIGHT, [247, 249, 252]);
+	const navy = [12, 59, 124];
+	const navyDeep = [10, 50, 104];
+	const gold = [240, 196, 25];
+	const ink = [14, 26, 43];
+	const label = [12, 59, 124];
+	const headerH = 11 * PX_PER_MM;
+	const footerH = 4.6 * PX_PER_MM;
+	const fieldMaxW = 27 * PX_PER_MM;
 
-	fillRect(surface, 0, 0, WIDTH, 10.5 * PX_PER_MM, teal);
-	drawText(surface, 'REPUBLIC OF MALDIVES', 3.5 * PX_PER_MM, 2.4 * PX_PER_MM, 3, [255, 255, 255]);
-	drawText(surface, 'NATIONAL IDENTITY CARD', 3.5 * PX_PER_MM, 6.6 * PX_PER_MM, 2, [200, 226, 222]);
+	// Outer frame kept inside the raster so edges stay detectable after print.
+	fillRect(surface, 0, 0, WIDTH, HEIGHT, navy);
+	fillRect(surface, 1.15 * PX_PER_MM, 1.15 * PX_PER_MM,
+		WIDTH - 2.3 * PX_PER_MM, HEIGHT - 2.3 * PX_PER_MM, [247, 249, 252]);
+
+	fillRect(surface, 0, 0, WIDTH, headerH, navyDeep);
+	fillRect(surface, 0, headerH - 0.55 * PX_PER_MM, WIDTH, 0.55 * PX_PER_MM, gold);
+
+	// ~2.6 mm / ~1.75 mm glyph height — readable on an ID-1 print and phone preview.
+	drawText(surface, 'REPUBLIC OF MALDIVES', 3.5 * PX_PER_MM, 2.0 * PX_PER_MM, 6, [255, 255, 255]);
+	drawText(surface, 'NATIONAL IDENTITY CARD', 3.5 * PX_PER_MM, 6.5 * PX_PER_MM, 4, [210, 224, 245]);
 
 	drawPortrait(surface, portrait, PORTRAIT_RECT);
 	drawQr(surface, qr);
 
 	const idX = PORTRAIT_RECT.x * PX_PER_MM;
 	const idWidth = PORTRAIT_RECT.width * PX_PER_MM;
-	const idText = CARDHOLDER.idNumber;
+	const idText = cardholder.idNumber;
+	const idScale = 4;
 	drawText(surface, idText,
-		idX + (idWidth - textWidth(idText, 3)) / 2,
-		(PORTRAIT_RECT.y + PORTRAIT_RECT.height + 1.4) * PX_PER_MM, 3, ink);
+		idX + (idWidth - textWidth(idText, idScale)) / 2,
+		(PORTRAIT_RECT.y + PORTRAIT_RECT.height + 1.0) * PX_PER_MM, idScale, navy);
 
-	let y = 14 * PX_PER_MM;
+	let y = 13.0 * PX_PER_MM;
 	const x = 27 * PX_PER_MM;
-	const rows = [
-		['NAME', CARDHOLDER.name],
-		['SEX', CARDHOLDER.sex],
-		['DATE OF BIRTH', CARDHOLDER.dob],
-		['PHONE', CARDHOLDER.phone],
-		['PERMANENT ADDRESS', CARDHOLDER.address]
-	];
-	for (const [label, value] of rows) {
-		drawText(surface, label, x, y, 1, grey);
-		drawText(surface, value, x, y + 1.1 * PX_PER_MM, 2, ink);
-		y += 5.2 * PX_PER_MM;
-	}
+	const labelScale = 3;
+	const valueScale = 5;
+	const smallScale = 4;
+	const labelGap = 0.35 * PX_PER_MM;
+	const blockGap = 1.1 * PX_PER_MM;
 
-	drawText(surface, 'BLS12-381 SIGNED', 3.5 * PX_PER_MM, HEIGHT - 3 * PX_PER_MM, 1, grey);
+	const drawField = (fieldLabel, value, scale = valueScale) => {
+		drawText(surface, fieldLabel, x, y, labelScale, label);
+		y += textHeight(labelScale) + labelGap;
+		y = drawWrapped(surface, value, x, y, scale, ink, fieldMaxW, Math.round(0.35 * PX_PER_MM));
+		y += blockGap;
+	};
+
+	drawField('NAME', cardholder.name);
+
+	// Sex is short; pair it with expiry. DOB stays full-width so it cannot
+	// run into the QR quiet zone the way a side-by-side date used to.
+	const pairGap = 9 * PX_PER_MM;
+	const pairScale = 4;
+	drawText(surface, 'SEX', x, y, labelScale, label);
+	drawText(surface, 'EXPIRES', x + pairGap, y, labelScale, label);
+	y += textHeight(labelScale) + labelGap;
+	drawText(surface, cardholder.sex, x, y, pairScale, ink);
+	drawText(surface, cardholder.expiry, x + pairGap, y, pairScale, ink);
+	y += textHeight(pairScale) + blockGap;
+
+	drawField('DATE OF BIRTH', cardholder.dob);
+	drawField('PERMANENT ADDRESS', cardholder.address, smallScale);
+
+	fillRect(surface, 0, HEIGHT - footerH, WIDTH, footerH, navy);
+	const footerY = HEIGHT - footerH + 1.15 * PX_PER_MM;
+	const footerScale = 3;
+	drawText(surface, 'DEPT OF NATIONAL REGISTRATION', 3.2 * PX_PER_MM, footerY, footerScale, [230, 238, 250]);
+	drawText(surface, 'BLS12-381 SIGNED',
+		WIDTH - 3.2 * PX_PER_MM - textWidth('BLS12-381 SIGNED', footerScale),
+		footerY, footerScale, [230, 238, 250]);
 
 	return surface;
 }
@@ -352,9 +398,26 @@ writeFileSync(join(OUT_DIR, 'card-genuine.png'), encodePng(WIDTH, HEIGHT, genuin
 const forged = renderCard(PORTRAITS.b, encoded.qr);
 writeFileSync(join(OUT_DIR, 'card-forged.png'), encodePng(WIDTH, HEIGHT, forged.data));
 
+// Correctly signed and correctly photographed, but out of date. Nothing
+// cryptographic catches this one; only the expiry check does.
+const expiredMessage = buildMessage(EXPIRED_CARDHOLDER, photoHash);
+const expiredSignature = await signMessage(expiredMessage, DEMO_SECRET_KEY);
+const expiredEncoded = encodeBarcode(joinBarcodeData(expiredMessage, expiredSignature));
+const expired = renderCard(PORTRAITS.a, expiredEncoded.qr, EXPIRED_CARDHOLDER);
+writeFileSync(join(OUT_DIR, 'card-expired.png'), encodePng(WIDTH, HEIGHT, expired.data));
+
+// A card reprinted under a different name, with the QR re-encoded to match so
+// that nothing on the face of it looks wrong. The signature is what fails.
+const TAMPERED_CARDHOLDER = { ...CARDHOLDER, name: 'Mohamed Imposter Ali' };
+const tamperedMessage = buildMessage(TAMPERED_CARDHOLDER, photoHash);
+const tamperedEncoded = encodeBarcode(joinBarcodeData(tamperedMessage, signature));
+const tampered = renderCard(PORTRAITS.a, tamperedEncoded.qr, TAMPERED_CARDHOLDER);
+writeFileSync(join(OUT_DIR, 'card-tampered.png'), encodePng(WIDTH, HEIGHT, tampered.data));
+
 console.log(`issuer            ${ISSUER.name}`);
 console.log(`portrait hash     ${photoHash}`);
 console.log(`forged face hash  ${pHashHex(PORTRAITS.b)}`);
+console.log(`expiry            ${CARDHOLDER.expiry} (genuine), ${EXPIRED_CARDHOLDER.expiry} (expired sample)`);
 console.log(`payload           ${barcodeData.length} chars -> ${encoded.byteLength} bytes, QR version ${encoded.qr.version} (${encoded.qr.size} modules)`);
 console.log(`card raster       ${WIDTH}x${HEIGHT} at ${PX_PER_MM} px/mm`);
-console.log('wrote samples/card-genuine.png and samples/card-forged.png');
+console.log('wrote samples/card-genuine.png, card-forged.png, card-expired.png and card-tampered.png');

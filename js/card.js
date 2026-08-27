@@ -18,9 +18,10 @@ export const CARD = { width: 85.6, height: 54 };
  * The scanner relies on these being fixed: once the QR's four corners are
  * located in a camera frame, the portrait rectangle follows from the geometry.
  *
- * The QR is deliberately large. A signed payload encodes to a version 11
- * symbol, so 61 modules have to fit inside QR_RECT; at 25 mm that is 0.41 mm
- * per module, which prints cleanly and stays within reach of a phone camera.
+ * The QR is deliberately large. A signed payload encodes to around a version 10
+ * symbol, so about 57 modules have to fit inside QR_RECT; at 25 mm that is
+ * roughly 0.39 mm per module, which prints cleanly and stays within reach of a
+ * phone camera.
  * Shrinking this rectangle is the quickest way to make cards unscannable.
  */
 export const PORTRAIT_RECT = { x: 5, y: 14, width: 19.5, height: 26 };

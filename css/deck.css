@@ -1,0 +1,367 @@
+/* ------------------------------------------------------------------ *
+ * Presentation deck
+ *
+ * Slides are laid out on a fixed 1280x720 stage and scaled to fit the
+ * viewport with a transform. Designing against fixed pixels rather than
+ * viewport units means a slide looks identical on a laptop, a projector
+ * and a PDF, which is the whole point of a deck.
+ * ------------------------------------------------------------------ */
+
+:root {
+	--stage-w: 1280px;
+	--stage-h: 720px;
+}
+
+html, body {
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+	background: #0b1418;
+}
+
+body.deck {
+	font-family: var(--sans);
+	color: var(--ink);
+	display: grid;
+	place-items: center;
+}
+
+.stage {
+	width: var(--stage-w);
+	height: var(--stage-h);
+	position: relative;
+	transform-origin: center center;
+	background: var(--surface);
+	overflow: hidden;
+	box-shadow: 0 20px 70px rgb(0 0 0 / 45%);
+}
+
+/* ------------------------------ Slides ------------------------------ */
+
+.slide {
+	position: absolute;
+	inset: 0;
+	padding: 62px 72px 76px;
+	display: none;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.slide[data-active] { display: flex; }
+
+.slide__kicker {
+	font-size: 15px;
+	font-weight: 650;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--accent);
+	margin-bottom: 18px;
+}
+
+.slide h2 {
+	font-size: 46px;
+	line-height: 1.1;
+	letter-spacing: -0.02em;
+	margin: 0 0 22px;
+	max-width: 22ch;
+}
+
+.slide h3 {
+	font-size: 24px;
+	margin: 0 0 10px;
+	font-weight: 620;
+}
+
+.slide p {
+	font-size: 21px;
+	line-height: 1.5;
+	color: var(--ink-soft);
+	max-width: 46ch;
+	margin: 0 0 14px;
+}
+
+.slide ul {
+	font-size: 21px;
+	line-height: 1.45;
+	color: var(--ink-soft);
+	margin: 0;
+	padding-left: 26px;
+	max-width: 48ch;
+}
+
+.slide li { margin-bottom: 14px; }
+.slide li strong { color: var(--ink); font-weight: 640; }
+.slide em { color: var(--ink); font-style: normal; font-weight: 640; }
+
+.slide--center { align-items: center; text-align: center; }
+.slide--center h2 { max-width: 24ch; }
+.slide--center p { max-width: 52ch; }
+
+/* A single sentence that should land on its own. */
+.slide--statement h2 {
+	font-size: 56px;
+	max-width: 20ch;
+	line-height: 1.08;
+}
+
+/* ------------------------------ Title and dividers ------------------------------ */
+
+.slide--title {
+	background: linear-gradient(150deg, var(--accent-strong), #1a56b0 55%, #3b7dd8);
+	color: #fff;
+	justify-content: flex-end;
+}
+
+.slide--title h1 {
+	font-size: 58px;
+	line-height: 1.06;
+	letter-spacing: -0.025em;
+	margin: 0 0 20px;
+	max-width: 20ch;
+	color: #fff;
+}
+
+.slide--title p {
+	color: rgb(255 255 255 / 82%);
+	font-size: 23px;
+	max-width: 50ch;
+}
+
+.slide--title .slide__kicker { color: rgb(255 255 255 / 75%); }
+
+.slide--title .title-meta {
+	margin-top: 34px;
+	padding-top: 20px;
+	border-top: 1px solid rgb(255 255 255 / 25%);
+	font-size: 16px;
+	color: rgb(255 255 255 / 70%);
+}
+
+.slide--divider {
+	background: var(--ink);
+	color: #fff;
+	justify-content: center;
+}
+
+.slide--divider h2 { color: #fff; font-size: 52px; margin: 0; }
+.slide--divider .slide__kicker { color: #6fd0c4; }
+
+/* ------------------------------ Layouts ------------------------------ */
+
+.split {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 48px;
+	align-items: center;
+}
+
+.split--wide-right { grid-template-columns: 0.85fr 1.15fr; }
+.split--wide-left { grid-template-columns: 1.15fr 0.85fr; }
+
+.split img {
+	width: 100%;
+	display: block;
+	border-radius: 10px;
+	border: 1px solid var(--line);
+}
+
+.slide figcaption {
+	font-size: 14px;
+	color: var(--ink-faint);
+	margin-top: 10px;
+	line-height: 1.4;
+}
+
+/* ------------------------------ Components ------------------------------ */
+
+.deck-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+	gap: 18px;
+	margin-top: 12px;
+}
+
+.deck-stat {
+	background: var(--surface-sunken);
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	padding: 20px 22px;
+}
+
+.deck-stat__value {
+	font-size: 40px;
+	font-weight: 700;
+	letter-spacing: -0.03em;
+	color: var(--accent-strong);
+	font-variant-numeric: tabular-nums;
+	line-height: 1;
+}
+
+.deck-stat__label {
+	font-size: 14px;
+	color: var(--ink-faint);
+	margin-top: 8px;
+	line-height: 1.35;
+}
+
+.deck-stat--bad .deck-stat__value { color: var(--danger); }
+
+.slide table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 17px;
+}
+
+.slide th, .slide td {
+	text-align: left;
+	padding: 9px 12px;
+	border-bottom: 1px solid var(--line);
+}
+
+.slide thead th {
+	font-size: 14px;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--ink-faint);
+	border-bottom: 2px solid var(--line-strong);
+}
+
+.slide td:first-child { font-weight: 550; }
+.slide .yes { color: var(--ok); font-weight: 650; }
+.slide .no { color: var(--danger); font-weight: 650; }
+.slide .partial { color: var(--warn); font-weight: 650; }
+
+.slide .verdict { font-size: 18px; }
+.slide .verdict__title { font-size: 21px; }
+.slide .verdict__detail { font-size: 16px; }
+
+.slide .mono-block {
+	font-size: 13px;
+	line-height: 1.6;
+	word-break: break-all;
+}
+
+.pill-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+
+.pill {
+	font-size: 15px;
+	font-weight: 550;
+	padding: 7px 15px;
+	border-radius: 999px;
+	background: var(--surface-sunken);
+	border: 1px solid var(--line);
+	color: var(--ink-soft);
+}
+
+.pill--now { background: var(--ok-wash); border-color: #b9dcc4; color: var(--ok); }
+.pill--later { background: var(--warn-wash); border-color: #eddcb6; color: var(--warn); }
+
+.timeline { display: grid; gap: 12px; margin-top: 8px; }
+
+.timeline__row {
+	display: grid;
+	grid-template-columns: 130px 1fr;
+	gap: 20px;
+	align-items: baseline;
+	padding-bottom: 12px;
+	border-bottom: 1px solid var(--line);
+	font-size: 19px;
+}
+
+.timeline__when { font-weight: 680; color: var(--accent-strong); font-size: 17px; }
+.timeline__what { color: var(--ink-soft); }
+.timeline__what strong { color: var(--ink); font-weight: 620; }
+
+.demo-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 20px;
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--accent);
+	text-decoration: none;
+	border: 1px solid var(--accent);
+	border-radius: 999px;
+	padding: 8px 18px;
+}
+
+.demo-link:hover { background: var(--accent-wash); }
+
+/* ------------------------------ Chrome ------------------------------ */
+
+.slide__footer {
+	position: absolute;
+	left: 72px;
+	right: 72px;
+	bottom: 30px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 13px;
+	color: var(--ink-faint);
+	border-top: 1px solid var(--line);
+	padding-top: 12px;
+}
+
+.slide--title .slide__footer,
+.slide--divider .slide__footer { display: none; }
+
+.progress {
+	position: absolute;
+	left: 0;
+	bottom: 0;
+	height: 3px;
+	background: var(--accent);
+	transition: width 0.25s ease;
+	z-index: 5;
+}
+
+.deck-help {
+	position: fixed;
+	bottom: 14px;
+	right: 18px;
+	font-size: 12px;
+	color: rgb(255 255 255 / 45%);
+	font-family: var(--sans);
+}
+
+/* Speaker notes never reach the projector; they are read from the DOM. */
+.notes { display: none; }
+
+/* ------------------------------ Print ------------------------------ */
+
+@page { size: A4 landscape; margin: 0; }
+
+@media print {
+	html, body { overflow: visible; height: auto; background: #fff; }
+	body.deck { display: block; }
+	.deck-help, .progress { display: none !important; }
+
+	.stage {
+		width: 100%;
+		height: auto;
+		box-shadow: none;
+		transform: none !important;
+	}
+
+	.slide {
+		position: relative;
+		inset: auto;
+		display: flex !important;
+		width: 297mm;
+		height: 209mm;
+		padding: 16mm 18mm 20mm;
+		break-after: page;
+		border: none;
+	}
+
+	.slide:last-child { break-after: auto; }
+	.slide__footer { left: 18mm; right: 18mm; bottom: 10mm; }
+
+	/* Backgrounds carry meaning on the title and divider slides. */
+	.slide--title, .slide--divider {
+		-webkit-print-color-adjust: exact;
+		print-color-adjust: exact;
+	}
+}

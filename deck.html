@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Making the National Identity Card Verifiable · Presentation</title>
+<meta name="description" content="Stakeholder presentation: a cryptographically signed QR code that makes the Maldivian national identity card verifiable offline on any phone.">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/deck.css">
+</head>
+<body class="deck">
+
+<div class="stage" id="stage">
+
+	<!-- 1 -->
+	<section class="slide slide--title">
+		<div class="slide__kicker">Technical proposal</div>
+		<h1>Making the National Identity Card Verifiable</h1>
+		<p>
+			A signed QR code that binds the printed details and the cardholder&rsquo;s
+			photograph to the issuing authority. Deployable with the next print run.
+			Verifiable offline, on any phone, by anyone.
+		</p>
+		<div class="title-meta">
+			Department of National Registration &middot; Maldives Digital Service &middot;
+			Working prototype with a complete reference implementation
+		</div>
+		<p class="notes">Frame the session: fifteen minutes, a live demonstration, and one decision at the end.</p>
+	</section>
+
+	<!-- 2 -->
+	<section class="slide slide--statement slide--center">
+		<h2>Today, verifying an identity card means looking at it.</h2>
+		<p>That is a judgement about printing quality. It is not a verification of fact.</p>
+		<p class="notes">Pause here. Let the room sit with it. Everyone present has accepted a card on sight this week.</p>
+	</section>
+
+	<!-- 3 -->
+	<section class="slide">
+		<div class="slide__kicker">The problem</div>
+		<h2>What the card cannot prove</h2>
+		<ul>
+			<li>That the <strong>name printed on it</strong> is the name the state issued</li>
+			<li>That the <strong>details have not been altered</strong> since issue</li>
+			<li>That the <strong>photograph</strong> is the one attached to that record</li>
+			<li>That the card is <strong>still in date</strong>, beyond reading a printed line</li>
+		</ul>
+		<p style="margin-top:22px;">
+			Banking, travel, employment, land, healthcare and voting all rest on this.
+		</p>
+		<div class="slide__footer"><span>The problem</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 4 -->
+	<section class="slide">
+		<div class="slide__kicker">The problem</div>
+		<h2>Forgery is not hypothetical</h2>
+		<ul>
+			<li>Courts note document forgery cases are <strong>increasing</strong>, and police have made them a priority</li>
+			<li>In an <strong>MVR 8 million</strong> recruitment and money laundering case, investigators recovered forged permits, passport photographs and <em>identity cards of Maldivians</em> from the principal&rsquo;s devices</li>
+			<li><strong>Twelve people charged</strong> over forged registry documents used to claim land under the Binveriya scheme</li>
+		</ul>
+		<p style="margin-top:20px; font-size:19px;">
+			A forged card is rarely the goal. It is the instrument used to reach a permit,
+			an account, a plot of land.
+		</p>
+		<div class="slide__footer"><span>The problem</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 5 -->
+	<section class="slide slide--center slide--statement">
+		<h2>The photograph is the one element with no protection at all.</h2>
+		<p>
+			It is what connects a document to a human being &mdash; and nothing binds it to
+			the data beside it.
+		</p>
+		<p class="notes">This is the hinge of the whole pitch. Everything after this is the fix.</p>
+	</section>
+
+	<!-- 6 -->
+	<section class="slide slide--divider">
+		<div class="slide__kicker">Section one</div>
+		<h2>Where this fits</h2>
+	</section>
+
+	<!-- 7 -->
+	<section class="slide">
+		<div class="slide__kicker">National context</div>
+		<h2>A programme already under way</h2>
+		<div class="timeline">
+			<div class="timeline__row">
+				<div class="timeline__when">May 2025</div>
+				<div class="timeline__what"><strong>Maldives 2.0</strong> launched, full implementation targeted 26 July 2028</div>
+			</div>
+			<div class="timeline__row">
+				<div class="timeline__when">Live now</div>
+				<div class="timeline__what"><strong>eFaas</strong> &mdash; 272,000+ users aged 10 and above, around 80% of the eligible population</div>
+			</div>
+			<div class="timeline__row">
+				<div class="timeline__when">July 2026</div>
+				<div class="timeline__what"><strong>Digital Identity Bill</strong> approved by parliament, referred to the ICT Committee</div>
+			</div>
+			<div class="timeline__row">
+				<div class="timeline__when">2027</div>
+				<div class="timeline__what"><strong>Integrated digital identity system</strong> planned</div>
+			</div>
+			<div class="timeline__row">
+				<div class="timeline__when">~2028</div>
+				<div class="timeline__what"><strong>Smart ID card</strong> &mdash; microchip, fingerprint, payments</div>
+			</div>
+		</div>
+		<div class="slide__footer"><span>National context</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 8 -->
+	<section class="slide">
+		<div class="slide__kicker">National context</div>
+		<h2>Both are strong. Both leave the same gap.</h2>
+		<div class="split" style="margin-top:6px;">
+			<div>
+				<h3>eFaas</h3>
+				<p style="font-size:19px;">
+					Proves who you are <em>to a website</em>. Needs a smartphone, an enrolment
+					and a working connection.
+				</p>
+			</div>
+			<div>
+				<h3>Smart ID chip</h3>
+				<p style="font-size:19px;">
+					Strong where deployed. A chip proves nothing until a <em>reader</em> is
+					present, powered and integrated.
+				</p>
+			</div>
+		</div>
+		<p style="margin-top:26px; font-size:22px; color:var(--ink);">
+			Neither covers a person handing a card across a counter to another person.
+		</p>
+		<div class="slide__footer"><span>National context</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 9 -->
+	<section class="slide slide--center">
+		<div class="slide__kicker">The opportunity</div>
+		<h2>Where readers arrive last is where this matters most</h2>
+		<p>
+			The stated aim is service access from any island without costly inter-island
+			travel. A check that needs only a camera and no network is strongest exactly
+			where the alternatives are weakest.
+		</p>
+		<div class="slide__footer"><span>National context</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 10 -->
+	<section class="slide slide--divider">
+		<div class="slide__kicker">Section two</div>
+		<h2>The proposal</h2>
+	</section>
+
+	<!-- 11 -->
+	<section class="slide">
+		<div class="slide__kicker">The proposal</div>
+		<h2>Add one QR code. Change nothing else.</h2>
+		<p style="font-size:19px;">
+			It carries the six printed fields, a fingerprint of the photograph, and a
+			signature from the issuing authority over all of it.
+		</p>
+		<div class="mono-block">MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-08-27#Ma. Blue Heaven, Male, Maldives#290d5eb82deaf087#&lt;signature&gt;</div>
+		<div class="pill-row">
+			<span class="pill pill--now">Same card stock</span>
+			<span class="pill pill--now">Same layout</span>
+			<span class="pill pill--now">Same workflow</span>
+			<span class="pill pill--now">No card recall</span>
+		</div>
+		<div class="slide__footer"><span>The proposal</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 12 -->
+	<section class="slide">
+		<div class="slide__kicker">The proposal</div>
+		<div class="split split--wide-right">
+			<div>
+				<h2 style="font-size:38px;">266 bytes of ink</h2>
+				<p style="font-size:19px;">
+					A version 10 QR symbol in a 25 mm square: 0.385 mm per module. Comfortable
+					for card printing, easy for a phone camera.
+				</p>
+			</div>
+			<figure style="margin:0;">
+				<img src="samples/card-genuine.png?v=blue" alt="Sample identity card carrying the signed QR code">
+				<figcaption>Illustrative mockup. Navy ICAO-style layout, real sample portrait, synthetic data.</figcaption>
+			</figure>
+		</div>
+		<div class="slide__footer"><span>The proposal</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 13 -->
+	<section class="slide">
+		<div class="slide__kicker">The proposal</div>
+		<h2>Four things become checkable</h2>
+		<ul>
+			<li><strong>Authenticity</strong> &mdash; the signature verifies only against the authority&rsquo;s key</li>
+			<li><strong>Integrity</strong> &mdash; altering any field breaks the signature</li>
+			<li><strong>Photo binding</strong> &mdash; swapping the photograph breaks the match</li>
+			<li><strong>Validity</strong> &mdash; the expiry date is inside the signature, so it cannot be extended</li>
+		</ul>
+		<div class="slide__footer"><span>The proposal</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 14 -->
+	<section class="slide slide--divider">
+		<div class="slide__kicker">Section three</div>
+		<h2>How it works</h2>
+	</section>
+
+	<!-- 15 -->
+	<section class="slide">
+		<div class="slide__kicker">Technology</div>
+		<h2>Signatures: one key signs, everyone checks</h2>
+		<p style="font-size:19px;">
+			The authority holds a private key and can produce signatures. Everyone else holds
+			only the public key: they can <em>check</em> signatures, never create them.
+		</p>
+		<div class="deck-stats">
+			<div class="deck-stat"><div class="deck-stat__value">BLS12-381</div><div class="deck-stat__label">signature scheme, used in production at scale</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">96 B</div><div class="deck-stat__label">signature size</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">48 B</div><div class="deck-stat__label">public key, published freely</div></div>
+		</div>
+		<p style="margin-top:18px; font-size:18px;">
+			Publishing the public key nationally costs nothing and grants no ability to issue.
+		</p>
+		<div class="slide__footer"><span>How it works</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 16 -->
+	<section class="slide">
+		<div class="slide__kicker">Technology</div>
+		<h2>Binding the photograph</h2>
+		<p style="font-size:19px;">
+			A cryptographic hash would reject a re-photographed picture. So the card carries a
+			<em>perceptual</em> hash &mdash; 64 bits describing the image&rsquo;s structure.
+			Same face, nearly the same bits.
+		</p>
+		<div class="deck-stats">
+			<div class="deck-stat"><div class="deck-stat__value">0</div><div class="deck-stat__label">bits differ &mdash; genuine, scanned flat</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">2</div><div class="deck-stat__label">bits differ &mdash; genuine, angled and noisy</div></div>
+			<div class="deck-stat deck-stat--bad"><div class="deck-stat__value">34</div><div class="deck-stat__label">bits differ &mdash; a different face</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">12</div><div class="deck-stat__label">acceptance threshold</div></div>
+		</div>
+		<p style="margin-top:18px; font-size:18px;">The margin is wide in both directions.</p>
+		<div class="slide__footer"><span>How it works</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 17 -->
+	<section class="slide">
+		<div class="slide__kicker">Technology</div>
+		<h2>The photo is found by geometry, not by asking</h2>
+		<p style="font-size:19px;">
+			QR decoders report the four corners of the symbol. The card is a rigid layout, so
+			those corners determine exactly where the portrait must be. The verifier removes
+			perspective and rotation mathematically.
+		</p>
+		<p style="font-size:19px;">
+			That is why a hand-held photograph of a card lying at an angle still verifies.
+		</p>
+		<div class="slide__footer"><span>How it works</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 18 -->
+	<section class="slide slide--divider">
+		<div class="slide__kicker">Section four</div>
+		<h2>Demonstration</h2>
+	</section>
+
+	<!-- 19 -->
+	<section class="slide">
+		<div class="slide__kicker">Demonstration &mdash; 1 of 4</div>
+		<div class="split split--wide-left">
+			<div>
+				<h2 style="font-size:36px;">A genuine card</h2>
+				<div class="verdict verdict--pass">
+					<div class="verdict__icon">&#10003;</div>
+					<div>
+						<div class="verdict__title">Card verified</div>
+						<div class="verdict__detail">The details are authentic and the portrait matches the signed hash (0 of 64 bits differ).</div>
+					</div>
+				</div>
+				<a class="demo-link" href="scanner.html" target="_blank" rel="noopener">Open the live verifier &rarr;</a>
+			</div>
+			<figure style="margin:0;">
+				<img src="samples/card-genuine.png?v=blue" alt="Genuine sample card">
+				<figcaption>samples/card-genuine.png</figcaption>
+			</figure>
+		</div>
+		<div class="slide__footer"><span>Demonstration</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 20 -->
+	<section class="slide">
+		<div class="slide__kicker">Demonstration &mdash; 2 of 4</div>
+		<div class="split split--wide-left">
+			<div>
+				<h2 style="font-size:36px;">A reprinted card, different name</h2>
+				<div class="verdict verdict--fail">
+					<div class="verdict__icon">&#10005;</div>
+					<div>
+						<div class="verdict__title">Card rejected</div>
+						<div class="verdict__detail">The signature does not match. The data has been altered or was not issued by this authority.</div>
+					</div>
+				</div>
+				<a class="demo-link" href="scanner.html" target="_blank" rel="noopener">Open the live verifier &rarr;</a>
+				<p style="font-size:17px; margin-top:14px;">
+					Everything on the face of it looks right. The QR was re-encoded to match the
+					new name. The signature is what fails.
+				</p>
+			</div>
+			<figure style="margin:0;">
+				<img src="samples/card-tampered.png?v=blue" alt="Tampered sample card">
+				<figcaption>samples/card-tampered.png</figcaption>
+			</figure>
+		</div>
+		<div class="slide__footer"><span>Demonstration</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 21 -->
+	<section class="slide">
+		<div class="slide__kicker">Demonstration &mdash; 3 of 4</div>
+		<div class="split split--wide-left">
+			<div>
+				<h2 style="font-size:36px;">A genuine QR, a different face</h2>
+				<div class="verdict verdict--fail">
+					<div class="verdict__icon">&#10005;</div>
+					<div>
+						<div class="verdict__title">Portrait does not match</div>
+						<div class="verdict__detail">The signature is valid, but the photograph differs from the one the authority signed (22 of 64 bits differ).</div>
+					</div>
+				</div>
+				<a class="demo-link" href="scanner.html" target="_blank" rel="noopener">Open the live verifier &rarr;</a>
+				<p style="font-size:17px; margin-top:14px;">
+					The QR is untouched and genuinely signed. This is precisely why the photo
+					check exists.
+				</p>
+			</div>
+			<figure style="margin:0;">
+				<img src="samples/card-forged.png?v=blue" alt="Forged sample card with a substituted portrait">
+				<figcaption>samples/card-forged.png</figcaption>
+			</figure>
+		</div>
+		<div class="slide__footer"><span>Demonstration</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 22 -->
+	<section class="slide">
+		<div class="slide__kicker">Demonstration &mdash; 4 of 4</div>
+		<div class="split split--wide-left">
+			<div>
+				<h2 style="font-size:36px;">Correctly signed, out of date</h2>
+				<div class="verdict verdict--fail">
+					<div class="verdict__icon">&#10005;</div>
+					<div>
+						<div class="verdict__title">Card expired</div>
+						<div class="verdict__detail">The signature is authentic, but the card expired on 26 Aug 2024. It is no longer valid identification.</div>
+					</div>
+				</div>
+				<a class="demo-link" href="scanner.html" target="_blank" rel="noopener">Open the live verifier &rarr;</a>
+				<p style="font-size:17px; margin-top:14px;">
+					Nothing cryptographic is wrong with this card. The expiry date is inside the
+					signature, so it cannot be edited.
+				</p>
+			</div>
+			<figure style="margin:0;">
+				<img src="samples/card-expired.png?v=blue" alt="Expired sample card">
+				<figcaption>samples/card-expired.png</figcaption>
+			</figure>
+		</div>
+		<div class="slide__footer"><span>Demonstration</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 23 -->
+	<section class="slide slide--center">
+		<div class="slide__kicker">Performance</div>
+		<h2>The whole check takes a tenth of a second</h2>
+		<div class="deck-stats" style="max-width:900px;">
+			<div class="deck-stat"><div class="deck-stat__value">51 ms</div><div class="deck-stat__label">locate and decode the QR</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">27 ms</div><div class="deck-stat__label">verify the signature</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">23 ms</div><div class="deck-stat__label">recover and hash the portrait</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">102 ms</div><div class="deck-stat__label">total</div></div>
+		</div>
+		<p style="margin-top:20px; font-size:17px;">
+			Measured in a desktop browser. A phone will take several times longer &mdash; still
+			immediate at human timescales. No server was contacted.
+		</p>
+		<div class="slide__footer"><span>Performance</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 24 -->
+	<section class="slide">
+		<div class="slide__kicker">Comparison</div>
+		<h2 style="font-size:38px;">Against the alternatives</h2>
+		<table>
+			<thead>
+				<tr><th>Property</th><th>Card today</th><th>Signed QR</th><th>Chip card</th></tr>
+			</thead>
+			<tbody>
+				<tr><td>Detects forgery or alteration</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+				<tr><td>Detects a swapped photograph</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+				<tr><td>Needs no reader hardware</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+				<tr><td>Works with no connectivity</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="partial">Reader dependent</td></tr>
+				<tr><td>Anyone can verify</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td></tr>
+				<tr><td>Marginal cost per card</td><td>&mdash;</td><td class="yes">Effectively zero</td><td class="no">Chip and logistics</td></tr>
+				<tr><td>Confirms the bearer</td><td class="no">No</td><td class="partial">Photo only</td><td class="yes">Fingerprint</td></tr>
+				<tr><td>Available</td><td>&mdash;</td><td class="yes">Next print run</td><td class="partial">Target 2028</td></tr>
+			</tbody>
+		</table>
+		<div class="slide__footer"><span>Comparison</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 25 -->
+	<section class="slide">
+		<div class="slide__kicker">Honesty</div>
+		<h2>What this does not do</h2>
+		<ul>
+			<li><strong>No offline revocation.</strong> A card reported stolen still verifies. That needs a connected status check.</li>
+			<li><strong>It confirms the picture, not the person.</strong> Matching the bearer stays a human judgement, as it is today.</li>
+			<li><strong>Key compromise is catastrophic.</strong> The signing key must live in an HSM under split control.</li>
+			<li><strong>Nothing is encrypted.</strong> A scanner reads what the card already shows &mdash; but machine-readable is not the same as visible.</li>
+		</ul>
+		<p class="notes">Say this slide out loud rather than skipping it. Advisors in the room will already be thinking it, and volunteering it buys credibility for everything else.</p>
+		<div class="slide__footer"><span>Honesty</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 26 -->
+	<section class="slide">
+		<div class="slide__kicker">Delivery</div>
+		<h2 style="font-size:38px;">Rollout and cost</h2>
+		<div class="split" style="align-items:start;">
+			<div>
+				<h3>Phases</h3>
+				<ul style="font-size:18px;">
+					<li>Pilot, security review, print and camera trials &mdash; 2&ndash;3 months</li>
+					<li>HSM and issuance integration &mdash; 3&ndash;4 months</li>
+					<li>Verifier release, in parallel</li>
+					<li>Cards gain the QR through normal reissue</li>
+				</ul>
+			</div>
+			<div>
+				<h3>Cost profile</h3>
+				<ul style="font-size:18px;">
+					<li><strong>Zero</strong> per card &mdash; the QR is ink</li>
+					<li><strong>One HSM</strong> &mdash; the only significant capital item</li>
+					<li><strong>Zero</strong> reader hardware, at every checkpoint, ever</li>
+					<li><strong>No</strong> card replacement programme</li>
+				</ul>
+			</div>
+		</div>
+		<div class="slide__footer"><span>Delivery</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 27 -->
+	<section class="slide slide--center">
+		<div class="slide__kicker">Coexistence</div>
+		<h2>Layers, not competitors</h2>
+		<p>
+			The chip serves payments, fingerprint verification and online authentication
+			wherever a reader exists. The signed QR serves universal offline verification, on
+			the same card, for everyone else.
+		</p>
+		<p style="color:var(--ink); font-size:22px; margin-top:10px;">
+			Printing the QR on the Smart ID card costs nothing &mdash; and means the card
+			still proves something when the reader is absent, broken or unpowered.
+		</p>
+		<div class="slide__footer"><span>Coexistence</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 28 -->
+	<section class="slide">
+		<div class="slide__kicker">The ask</div>
+		<h2>Authorise a time-boxed pilot</h2>
+		<ul style="font-size:20px;">
+			<li>Approve a pilot with <strong>DNR and Maldives Digital Service</strong></li>
+			<li>Commission an <strong>independent security review</strong></li>
+			<li>Authorise <strong>HSM procurement</strong> and a documented key ceremony</li>
+			<li>Agree which fields belong in a <strong>machine-readable payload</strong></li>
+			<li>Direct that the <strong>Smart ID specification reserve space</strong> for a printed signed QR</li>
+		</ul>
+		<p style="margin-top:20px; color:var(--ink); font-size:20px;">
+			The alternative is leaving the card unverifiable for another two years.
+		</p>
+		<div class="slide__footer"><span>The ask</span><span class="page-num"></span></div>
+	</section>
+
+	<div class="progress" id="progress"></div>
+</div>
+
+<div class="deck-help">&larr; &rarr; navigate &middot; F fullscreen &middot; P print</div>
+
+<script type="module" src="js/deck.js"></script>
+
+</body>
+</html>
