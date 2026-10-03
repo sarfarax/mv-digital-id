@@ -489,8 +489,8 @@ as an error that bypasses the check.
 - `tools/make-keypair.mjs` generates a keypair. `randomSecretKey()` draws 32
   random bytes and reduces the first byte modulo `0x40`, which keeps the value
   below *r*.
-- The demonstration authority (`js/issuer-key.js`) is
-  "Department of National Registration" with public key
+- The demonstration authority (`js/issuer-key.js`) is the fictional
+  "Demo Issuing Authority" with public key
   `972d56fa0c5031dfbd48f186ab17dab12c773bcbc4d49c67ce45792f314b53a461d57d59967941876d15736b8b8dd529`.
   Its secret key is committed to the repository for the demo (§15.1).
 - The verifier pins one trusted public key (editable in the UI, defaulting to
@@ -695,16 +695,18 @@ which is harder than matching an ID photo against its holder at a counter.
 
 | Case | Face code distance |
 | --- | --- |
-| Same portrait: darkened, washed out, blurred, downsampled, noisy, shifted | 0–9 |
-| Card printed, then photographed at an angle with noise (browser test) | 12–17 |
-| Original colour photo vs the signed greyscale portrait | 6–8 |
-| `portrait-1.jpg`, a different woman | 50–56 |
-| `portrait-3.jpg` vs `portrait-4.jpg`, two more different women | **32–38** |
+| Same portrait: darkened, washed out, blurred, downsampled, noisy, shifted | 0–8 |
+| Card printed, then photographed at an angle with noise (browser test) | 7–11 |
+| Original colour photo vs the signed greyscale portrait | 2–4 |
+| `portrait-1.jpg`, a different woman | **40–43** |
+| `portrait-3.jpg` vs `portrait-4.jpg`, two more different women | 44 |
 
-The last row falls partly inside the default threshold. face-api's own
-Euclidean distances for those faces are 0.46–0.56, under its usual 0.6
-"same person" rule, so the model rather than the binarisation fails to
-separate them. **The Enhanced tier MUST NOT be relied on operationally until
+The sample portraits are AI-generated faces (`samples/ATTRIBUTION.md`). The
+closest impostor sits 6–9 bits above the default threshold, at a face-api
+Euclidean distance of 0.60, on its usual "same person" boundary. An earlier
+sample set of real passport-standard photographs put two different women at
+32–38 bits, partly inside the threshold, with face-api distances of 0.46–0.56,
+so the model rather than the binarisation fails to separate similar faces. **The Enhanced tier MUST NOT be relied on operationally until
 measured on Maldivian enrolment photographs**, and probably moved to a stronger
 embedding model under a new schema version.
 
@@ -858,8 +860,8 @@ bytes.
 
 | Function | Result |
 | --- | --- |
-| Photo hash (§5) | `290d5eb82deaf087` |
-| Face code (§6), TensorFlow.js CPU backend | `af9e5dce17ac9f398df3e7ff18ce6cc2` (detector score 0.946) |
+| Photo hash (§5) | `8c00fd29c7f60ed3` |
+| Face code (§6), TensorFlow.js CPU backend | `4c81cff614859812e9f9e62f3d0a34e3` (detector score 0.955) |
 
 Other backends may differ from this face code by a few bits (§6.7).
 
@@ -884,26 +886,26 @@ Fields: `A123456`, `Aishath Nasheeda Ibrahim`, `F`, `1991-04-17`,
 
 ```
 message   (109 bytes)
-MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-10-03#Ma. Blue Heaven, Male, Maldives#290d5eb82deaf087
+MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-10-03#Ma. Blue Heaven, Male, Maldives#8c00fd29c7f60ed3
 
 signature
-8ec29939551a4689c7c75b33a77a9c910f8d2791fe4a303d4dc7ca25420f04434aa8f390a92286c1812826250b6185f9127a7e021f91fe7fc044da1df43e0b1000970e554cf66bca20fe73598222d504765c626b77be6542205e46ac96a80782
+a498fce20f440e20be6a4cce7099e655f4b7946d1fd5db95167ffc9f9e6a5a26a8da1145f35e514e2e3263c0f46ff62915b876ac15f1b4e1387473acd5311ddbe81f603ef6545f7ea5d578475e582127ddd0b7f8cb7038ced6f67e6038a89cbe
 ```
 
-Barcode data 302 characters; binary 270 bytes → QR version 10, ECC L; text 360
+Barcode data 302 characters; binary 264 bytes → QR version 10, ECC L; text 360
 characters → version 12.
 
 **MV3**
 
 ```
 message   (142 bytes)
-MV3#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-10-03#Ma. Blue Heaven, Male, Maldives#290d5eb82deaf087#af9e5dce17ac9f398df3e7ff18ce6cc2
+MV3#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-10-03#Ma. Blue Heaven, Male, Maldives#8c00fd29c7f60ed3#4c81cff614859812e9f9e62f3d0a34e3
 
 signature
-b90e71dbfdf049217226e1842d9ef1ff43b9148dda9d704e71c9a3adb2dea7ef885aaff58a19783a2c65a5f96180d9df0c65280f598a3774cb610b01a5746d2c11d1dc79d0a98a38ff3ee87389decf4d5bebf6247209016e6f10cc1c55578088
+b24ce20ee913922c29712c522154892a510c912afde50235c30a34fa354443f8701583ca8b8a7fb9df55bc25f226ca9d116e323e257019c5ddbdfb34ac91ddbcdb52074394405e33e46416aa8a17eca43cfe34ef7e8ce4bd5e3ef259da59f430
 ```
 
-Barcode data 335 characters; binary 290 bytes → QR version 11, ECC L; text 387
+Barcode data 335 characters; binary 292 bytes → QR version 11, ECC L; text 387
 characters → version 13.
 
 The sample cards in `samples/` are regenerated with a current expiry date, so

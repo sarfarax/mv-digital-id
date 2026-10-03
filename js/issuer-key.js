@@ -11,14 +11,16 @@
  * it.
  *
  * The secret key below is a throwaway committed to source control purely so the
- * demo runs out of the box. Treat it as public. Generate your own with:
+ * demo runs out of the box. Treat it as public. Because anyone can sign with it,
+ * the authority is deliberately fictional: cards it signs must never carry the
+ * name of a real issuer. Generate your own with:
  *
  *   node tools/make-keypair.mjs
  */
 
 export const ISSUER = {
-	name: 'Department of National Registration',
-	country: 'Republic of Maldives',
+	name: 'Demo Issuing Authority',
+	country: 'Demonstration only',
 	publicKey: '972d56fa0c5031dfbd48f186ab17dab12c773bcbc4d49c67ce45792f314b53a461d57d59967941876d15736b8b8dd529'
 };
 

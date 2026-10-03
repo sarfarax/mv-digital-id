@@ -517,6 +517,24 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 	overflow-wrap: normal;
 }
 
+/* Demo cards are marked as specimens. The stamp sits in the free strip below the
+ * fields and stays clear of the portrait and the QR, which the scanner reads
+ * pixel-exact. */
+.id-card__specimen {
+	position: absolute;
+	left: 27mm;
+	top: 45mm;
+	width: calc(var(--qr-x) - var(--qr-quiet) - 27mm);
+	overflow: hidden;
+	pointer-events: none;
+	font-size: 3.6mm;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	line-height: 1;
+	text-transform: uppercase;
+	color: rgb(196 32 44 / 50%);
+}
+
 .id-card__qr {
 	position: absolute;
 	left: var(--qr-x);

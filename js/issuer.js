@@ -163,8 +163,7 @@ dom.loadSample.addEventListener('click', async () => {
 /**
  * Fetch the bundled sample face and run it through the normal portrait
  * pipeline so "Load sample" needs no separate file picker.
- * Source: Maldives Immigration passport photo standards examples —
- * https://imuga.immigration.gov.mv/passport/photo-standards
+ * The face is AI-generated (see samples/ATTRIBUTION.md).
  */
 async function loadSamplePortrait() {
 	const response = await fetch('samples/portrait-2.jpg');

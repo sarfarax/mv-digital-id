@@ -58,10 +58,11 @@ built from). On the verify page, switch to **Upload an image** and drop in:
   genuine card; in step 3, upload `portrait-2.jpg` as the person presenting it
   (accepted) and then `portrait-1.jpg` (rejected as a different person).
 
-Sample portraits (`portrait-1.jpg` … `portrait-4.jpg`) are taken from the
-Maldives Immigration passport photo standards examples:
-[imuga.immigration.gov.mv/passport/photo-standards](https://imuga.immigration.gov.mv/passport/photo-standards).
-They are used here only to demonstrate issuance and verification.
+Sample portraits (`portrait-1.jpg` … `portrait-4.jpg`) are AI-generated faces
+of people who do not exist, in the public domain (sources in
+[samples/ATTRIBUTION.md](samples/ATTRIBUTION.md)). Every sample card is marked
+SPECIMEN and signed by a fictional demo authority whose secret key is in this
+repository, so none of them is, or can pass for, a real identity document.
 
 ## What the QR code contains
 
@@ -69,7 +70,7 @@ Fields are joined with `#`, following the convention of
 [oelna/signed-qr-codes](https://github.com/oelna/signed-qr-codes):
 
 ```
-MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-08-27#Ma. Blue Heaven, Male, Maldives#290d5eb82deaf087#<192 hex chars>
+MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-08-27#Ma. Blue Heaven, Male, Maldives#8c00fd29c7f60ed3#<192 hex chars>
 \________________________________ signed message _________________________________/\__ signature __/
 ```
 
@@ -192,18 +193,20 @@ On the bundled samples:
 
 | Case | Distance |
 | --- | --- |
-| Same portrait, darkened, washed out, blurred, downsampled, noisy, shifted | 0–9 bits |
-| Card printed, then photographed at an angle with noise (browser test) | 12–17 bits |
-| Original colour photo of the holder vs the signed greyscale portrait | 6–8 bits |
-| `portrait-1.jpg`, a different woman | 50–56 bits |
-| `portrait-3.jpg` and `portrait-4.jpg`, two more different women | **32–38 bits** |
+| Same portrait, darkened, washed out, blurred, downsampled, noisy, shifted | 0–8 bits |
+| Card printed, then photographed at an angle with noise (browser test) | 7–11 bits |
+| Original colour photo of the holder vs the signed greyscale portrait | 2–4 bits |
+| `portrait-1.jpg`, a different woman | **40–43 bits** |
+| `portrait-3.jpg` and `portrait-4.jpg`, two more different women | 44 bits |
 
-That last row is the important one. Three of the four Immigration example
-portraits — different women of similar age, photographed under the same
-standard — sit close to the threshold, and one pair falls inside it. The raw
-face-api embeddings agree (distances 0.46–0.56, under face-api's own 0.6
-"same person" rule), so this is the model, not the binarisation: it separates
-these faces far less well than it separates LFW. **The Enhanced tier should
+The bundled faces all clear the threshold, but not by much: `portrait-1.jpg` is
+only 6–9 bits above it, and its raw face-api distance to the holder is 0.60,
+exactly on face-api's own "same person" line. An earlier sample set of real
+passport-standard photographs did worse — different women of similar age,
+photographed under the same standard, sat at 32–38 bits, and one pair fell
+inside the threshold (raw distances 0.46–0.56). So this is the model, not the
+binarisation: it separates similar-looking faces far less well than it
+separates LFW. **The Enhanced tier should
 not be relied on until it has been measured on Maldivian enrolment photographs,
 and probably moved to a stronger embedding model.** The schema already pins
 the model to the `MV3` prefix, so a better one would ship as a new version.

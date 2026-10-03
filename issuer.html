@@ -108,8 +108,7 @@
 				<p class="panel__hint">
 					Drag to reposition and use the slider to zoom. The 3:4 frame is what gets printed
 					on the card and what gets hashed &mdash; nothing outside it is bound to the signature.
-					<strong>Load sample</strong> uses an example face from the
-					<a href="https://imuga.immigration.gov.mv/passport/photo-standards" target="_blank" rel="noopener">Maldives Immigration passport photo standards</a>.
+					<strong>Load sample</strong> uses an AI-generated example face of a person who does not exist.
 				</p>
 
 				<div class="stack">
@@ -242,8 +241,8 @@
 						<header class="id-card__header">
 							<span class="id-card__emblem" aria-hidden="true">MV</span>
 							<span>
-								<span class="id-card__country">Republic of Maldives</span><br>
-								<span class="id-card__type">National Identity Card</span>
+								<span class="id-card__country">Maldives Digital ID &middot; Demo</span><br>
+								<span class="id-card__type">Specimen &mdash; not a valid ID</span>
 							</span>
 						</header>
 
@@ -277,12 +276,14 @@
 							</div>
 						</div>
 
+						<div class="id-card__specimen" aria-hidden="true">Specimen</div>
+
 						<div class="id-card__qr-zone"></div>
 						<canvas class="id-card__qr" id="cardQr" width="1" height="1"></canvas>
 						<div class="id-card__qr-caption">Scan to verify</div>
 
 						<footer class="id-card__footer">
-							<span id="cardIssuer">Department of National Registration</span>
+							<span id="cardIssuer">Demo Issuing Authority</span>
 							<span id="cardTier">BLS12-381 signed</span>
 						</footer>
 					</article>

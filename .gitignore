@@ -5,3 +5,6 @@ node_modules/
 # Cards issued while trying the demo; the checked-in fixtures under samples/
 # are regenerated with tools/make-card.mjs instead.
 id-card-*.png
+
+# Editor and agent working files
+.cursor/

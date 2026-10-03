@@ -11,11 +11,10 @@
  *
  * The enhanced card runs face-api on the CPU, so this takes a few seconds.
  *
- * Portraits come from the real photographs in samples/portrait-*.jpg, exported
- * to greyscale 300x400 dumps (portrait-a.rgba / portrait-b.rgba) so hashing
- * matches the card that is printed. Those JPEGs are examples from Maldives
- * Immigration passport photo standards:
- * https://imuga.immigration.gov.mv/passport/photo-standards
+ * Portraits come from samples/portrait-*.jpg, AI-generated faces of people who
+ * do not exist (see samples/ATTRIBUTION.md), exported to greyscale 300x400
+ * dumps (portrait-a.rgba / portrait-b.rgba) so hashing matches the card that
+ * is printed.
  *
  * The card is rasterised directly rather than screenshotting the DOM, which
  * keeps this runnable from the command line. Only two things have to be exact:
@@ -242,7 +241,7 @@ function loadPortraitRgba(name) {
 	};
 }
 
-// Real photographs, centre-cropped to 3:4 and greyscaled to match the issuer.
+// Sample photographs, centre-cropped to 3:4 and greyscaled to match the issuer.
 const PORTRAITS = {
 	a: loadPortraitRgba('portrait-a.rgba'), // portrait-2.jpg — female sample cardholder
 	b: loadPortraitRgba('portrait-b.rgba')  // portrait-1.jpg — substituted face for forgery
@@ -320,6 +319,7 @@ function renderCard(portrait, qr, cardholder = CARDHOLDER, { enhanced = false } 
 	const headerH = 11 * PX_PER_MM;
 	const footerH = 4.6 * PX_PER_MM;
 	const fieldMaxW = 27 * PX_PER_MM;
+	const specimenRed = [196, 32, 44];
 
 	// Outer frame kept inside the raster so edges stay detectable after print.
 	fillRect(surface, 0, 0, WIDTH, HEIGHT, navy);
@@ -330,8 +330,15 @@ function renderCard(portrait, qr, cardholder = CARDHOLDER, { enhanced = false } 
 	fillRect(surface, 0, headerH - 0.55 * PX_PER_MM, WIDTH, 0.55 * PX_PER_MM, gold);
 
 	// ~2.6 mm / ~1.75 mm glyph height — readable on an ID-1 print and phone preview.
-	drawText(surface, 'REPUBLIC OF MALDIVES', 3.5 * PX_PER_MM, 2.0 * PX_PER_MM, 6, [255, 255, 255]);
-	drawText(surface, 'NATIONAL IDENTITY CARD', 3.5 * PX_PER_MM, 6.5 * PX_PER_MM, 4, [210, 224, 245]);
+	drawText(surface, 'MALDIVES DIGITAL ID - DEMO', 3.5 * PX_PER_MM, 2.0 * PX_PER_MM, 6, [255, 255, 255]);
+	drawText(surface, 'SPECIMEN - NOT A VALID ID', 3.5 * PX_PER_MM, 6.5 * PX_PER_MM, 4, [210, 224, 245]);
+
+	// Specimen badge in the header, clear of the QR column below it.
+	const badgeScale = 5;
+	const badgeW = textWidth('SPECIMEN', badgeScale) + 1.6 * PX_PER_MM;
+	const badgeX = WIDTH - 3.2 * PX_PER_MM - badgeW;
+	fillRect(surface, badgeX, 2.6 * PX_PER_MM, badgeW, textHeight(badgeScale) + 1.6 * PX_PER_MM, specimenRed);
+	drawText(surface, 'SPECIMEN', badgeX + 0.8 * PX_PER_MM, 3.4 * PX_PER_MM, badgeScale, [255, 255, 255]);
 
 	drawPortrait(surface, portrait, PORTRAIT_RECT);
 	drawQr(surface, qr);
@@ -346,6 +353,12 @@ function renderCard(portrait, qr, cardholder = CARDHOLDER, { enhanced = false } 
 
 	let y = 13.0 * PX_PER_MM;
 	const x = 27 * PX_PER_MM;
+
+	// Specimen stamp in the free strip below the fields, kept out of the
+	// portrait and QR rectangles so the scanner's pixel-exact reads are
+	// unaffected. Drawn first, so a long address simply paints over it.
+	const stampScale = 8;
+	drawText(surface, 'SPECIMEN', x, 41.5 * PX_PER_MM, stampScale, [226, 150, 158]);
 	const labelScale = 3;
 	const valueScale = 5;
 	const smallScale = 4;
@@ -378,7 +391,7 @@ function renderCard(portrait, qr, cardholder = CARDHOLDER, { enhanced = false } 
 	fillRect(surface, 0, HEIGHT - footerH, WIDTH, footerH, navy);
 	const footerY = HEIGHT - footerH + 1.15 * PX_PER_MM;
 	const footerScale = 3;
-	drawText(surface, 'DEPT OF NATIONAL REGISTRATION', 3.2 * PX_PER_MM, footerY, footerScale, [230, 238, 250]);
+	drawText(surface, ISSUER.name, 3.2 * PX_PER_MM, footerY, footerScale, [230, 238, 250]);
 	const footerRight = enhanced ? 'ENHANCED - BLS12-381 SIGNED' : 'BLS12-381 SIGNED';
 	drawText(surface, footerRight,
 		WIDTH - 3.2 * PX_PER_MM - textWidth(footerRight, footerScale),

@@ -237,7 +237,7 @@
 		produced by the issuing authority&rsquo;s private key.
 	</p>
 
-	<div class="mono-block">MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-08-27#Ma. Blue Heaven, Male, Maldives#290d5eb82deaf087#&lt;signature&gt;</div>
+	<div class="mono-block">MV2#A123456#Aishath Nasheeda Ibrahim#F#1991-04-17#2036-08-27#Ma. Blue Heaven, Male, Maldives#8c00fd29c7f60ed3#&lt;signature&gt;</div>
 
 	<p>
 		That is the entire change to the artefact. Nothing else about the card &mdash; its
@@ -246,7 +246,7 @@
 	</p>
 
 	<figure class="figure">
-		<img src="samples/card-genuine.png?v=blue" alt="Proposed Maldivian national identity card with navy frame, portrait, fields and signed QR code">
+		<img src="samples/card-genuine.png?v=specimen" alt="Specimen mockup of a proposed Maldivian national identity card with navy frame, portrait, fields and signed QR code">
 		<figcaption>
 			The proposed card face, in an ICAO-style navy layout with a high-contrast outer
 			frame so a camera can find the edges. Illustrative mockup with a real sample
@@ -635,10 +635,10 @@
 			<tr><td>Same-person pairs accepted at 34 bits</td><td>56.7%</td></tr>
 			<tr><td>Same-person pairs accepted at 40 bits (0.8% false accept)</td><td>75.7%</td></tr>
 			<tr><td>Equal error rate</td><td>6.7% (13.1% without centring)</td></tr>
-			<tr><td>Same portrait after print-like degradation</td><td>0&ndash;9 bits</td></tr>
-			<tr><td>Printed card photographed at an angle</td><td>12&ndash;17 bits</td></tr>
-			<tr><td>Different person, sample portrait 1</td><td>50&ndash;56 bits</td></tr>
-			<tr><td>Different people, sample portraits 3 and 4</td><td>32&ndash;38 bits</td></tr>
+			<tr><td>Same portrait after print-like degradation</td><td>0&ndash;8 bits</td></tr>
+			<tr><td>Printed card photographed at an angle</td><td>7&ndash;11 bits</td></tr>
+			<tr><td>Different person, sample portrait 1</td><td>40&ndash;43 bits</td></tr>
+			<tr><td>Different people, sample portraits 3 and 4</td><td>44 bits</td></tr>
 		</tbody>
 	</table>
 	<p class="caption">LFW same-person pairs are often years apart, so they are harder than matching an ID photograph at a counter. The unbinarised embedding reaches 83% at 0.1% false accept, so most of the gap is the model rather than the 128-bit code.</p>
@@ -646,9 +646,10 @@
 	<div class="callout callout--limit">
 		<span class="callout__label">What the samples show</span>
 		<p>
-			Three of the four Immigration example portraits &mdash; different women of similar
-			age photographed to the same standard &mdash; sit close to the threshold, and one
-			pair falls inside it. The model&rsquo;s raw embeddings agree, so this is a property
+			The closest bundled impostor clears the threshold by only 6&ndash;9 bits. An earlier
+			set of real passport-standard photographs did worse: different women of similar
+			age photographed to the same standard sat close to the threshold, and one pair
+			fell inside it. The model&rsquo;s raw embeddings agree, so this is a property
 			of the off-the-shelf model, not the code: it separates these faces far less well
 			than the public benchmark faces. Before the Enhanced tier is relied on it must be
 			measured on Maldivian enrolment photographs, and very likely moved to a stronger
@@ -887,29 +888,29 @@
 		<figure class="figure">
 			<div class="figure-grid">
 				<figure>
-					<img src="samples/card-genuine.png?v=blue" alt="Genuine sample card">
+					<img src="samples/card-genuine.png?v=specimen" alt="Genuine sample card">
 					<figcaption>Genuine &mdash; accepted</figcaption>
 				</figure>
 				<figure>
-					<img src="samples/card-tampered.png?v=blue" alt="Tampered sample card">
+					<img src="samples/card-tampered.png?v=specimen" alt="Tampered sample card">
 					<figcaption>Tampered name &mdash; signature fails</figcaption>
 				</figure>
 				<figure>
-					<img src="samples/card-forged.png?v=blue" alt="Forged sample card with substituted portrait">
+					<img src="samples/card-forged.png?v=specimen" alt="Forged sample card with substituted portrait">
 					<figcaption>Swapped face &mdash; portrait fails</figcaption>
 				</figure>
 				<figure>
-					<img src="samples/card-expired.png?v=blue" alt="Expired sample card">
+					<img src="samples/card-expired.png?v=specimen" alt="Expired sample card">
 					<figcaption>Expired &mdash; date check fails</figcaption>
 				</figure>
 				<figure>
-					<img src="samples/card-enhanced.png?v=mv3" alt="Enhanced sample card with signed face code">
+					<img src="samples/card-enhanced.png?v=specimen" alt="Enhanced sample card with signed face code">
 					<figcaption>Enhanced (MV3) &mdash; holder checked against the signed face code</figcaption>
 				</figure>
 			</div>
 			<figcaption>
 				The five sample cards used throughout this proposal and the live demo.
-				Illustrative mockups with real sample portraits and synthetic cardholder data;
+				Illustrative mockups with AI-generated sample portraits and synthetic cardholder data;
 				not official artefacts.
 			</figcaption>
 		</figure>
@@ -938,7 +939,7 @@
 			<a href="issuer.html">issuer</a> and <a href="scanner.html">verifier</a> are both
 			runnable in a browser, and the <a href="tests.html">test suite</a> exercises the
 			full pipeline including forged, tampered, expired and Enhanced cards. All cards and
-			cardholder details shown are illustrative mockups with real sample portraits and
+			cardholder details shown are illustrative mockups with AI-generated sample portraits and
 			synthetic data; the
 			signing key used in the demonstration is public and is not suitable for any
 			production use.
