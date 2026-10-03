@@ -47,7 +47,7 @@
 		<a class="tile" href="scanner.html">
 			<div class="tile__step">Step two</div>
 			<h2>Verify a card</h2>
-			<p>Scan the QR with a camera, check the signature, and confirm the printed photograph is the signed one.</p>
+			<p>Scan the QR with a camera, check the signature, confirm the printed photograph is the signed one, and on Enhanced cards match the person presenting it.</p>
 		</a>
 		<a class="tile" href="tests.html">
 			<div class="tile__step">Evidence</div>
@@ -73,7 +73,47 @@
 			</p>
 			<p>
 				The whole string is compressed with LZString and drawn as a QR code, which lands
-				around 266 bytes &mdash; a version 10 symbol.
+				around 270 bytes &mdash; a version 10 symbol. An Enhanced card adds a 32-character
+				face code and needs version 11.
+			</p>
+		</section>
+
+		<section class="panel">
+			<div class="panel__head"><h2>Two assurance levels</h2></div>
+			<p>
+				<strong>Standard (MV2)</strong>: signature, expiry, and a perceptual hash binding the
+				printed portrait. Proves the card and its photograph are genuine.
+			</p>
+			<p>
+				<strong>Enhanced (MV3)</strong>: everything above, plus a signed 128-bit face code.
+				The verifier photographs the person presenting the card, reduces their face to the
+				same code on the device, and compares the two bit by bit &mdash; so a genuine card
+				in the wrong hands is caught. Calibrated on a public face dataset, the default
+				threshold accepts 0.1% of different people; on the bundled Maldivian sample
+				portraits the off-the-shelf model separates faces less well, so it needs
+				measuring on real enrolment photos before anyone relies on it.
+			</p>
+			<p style="margin-bottom: 0;">
+				Both levels are live in this demo. The face models (about 7&nbsp;MB) download only
+				when an Enhanced card is checked; Standard cards never touch them. See the
+				<a href="proposal.html#extended-security">proposal</a> for the design and its limits.
+			</p>
+		</section>
+
+		<section class="panel">
+			<div class="panel__head"><h2>Why a signed payload, not a link?</h2></div>
+			<p>
+				A URL QR is easy to print and easy to fake. A forger points at a site that
+				<em>looks</em> official and shows a green tick &mdash; no cryptography required.
+				Clone domains (<code>verify-dnr.gov.mv</code>, <code>dnr.gov-mv.com</code>,
+				homographs) are routine phishing, and spotting the wrong URL under time pressure
+				is not a reliable control.
+			</p>
+			<p style="margin-bottom: 0;">
+				This design puts the evidence in the QR itself: a BLS12-381 signature checked
+				against a pinned public key, with no network call. A convincing website cannot
+				forge that signature. Online status checks can still sit beside it for revocation,
+				but they do not replace cryptographic verification.
 			</p>
 		</section>
 
@@ -86,6 +126,7 @@
 				<li>jsQR reports the QR&rsquo;s four corners. Because the card is a rigid, fixed layout, those corners determine where the portrait must be.</li>
 				<li>The portrait is lifted out of the frame with perspective and rotation removed, then normalised to the same 300&times;400 grayscale raster the issuer hashed.</li>
 				<li>Its perceptual hash is compared with the signed one. A handful of differing bits is ordinary camera noise; a large difference means a different face.</li>
+				<li>On an Enhanced card, the verifier also captures the person presenting it, computes their face code locally, and compares it with the signed code.</li>
 			</ol>
 		</section>
 	</div>
@@ -99,7 +140,8 @@
 		<ul style="color: var(--ink-soft); margin: 0; padding-left: 1.2rem;">
 			<li>The demo signing key is committed to this repository, so anyone can mint a card that this scanner accepts. A real issuer keeps that key in hardware.</li>
 			<li>The expiry date is checked offline, but there is no revocation: a card reported stolen the day after issue still verifies. A signature says only &ldquo;this was issued&rdquo;, never &ldquo;this is still good&rdquo;.</li>
-			<li>The portrait check compares a photograph to a photograph. It confirms the picture on the card is the signed one; it does not confirm the person holding the card is the person in the picture. That is a job for a human or for face recognition, neither of which is here.</li>
+			<li>On a Standard card, the portrait check compares a photograph to a photograph: it confirms the picture is the signed one, not that the holder is the person in it. Enhanced cards add that check, but without liveness detection &mdash; a good photo of the cardholder held up to the camera would pass &mdash; so it belongs at a staffed counter.</li>
+			<li>The face model was not trained on Maldivian faces and the threshold was calibrated on a public dataset of mostly Western faces. Error rates for the real population need measuring before the Enhanced tier is relied on.</li>
 			<li>Nothing in the payload is encrypted. Anyone who scans the card can read every field, exactly as they could by looking at it.</li>
 		</ul>
 	</section>

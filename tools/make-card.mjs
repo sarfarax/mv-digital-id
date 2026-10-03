@@ -1,11 +1,15 @@
 /*
  * Render ready-made sample cards. Run with: node tools/make-card.mjs
  *
- * Produces four cards, so the scanner can be tried without a camera or a
+ * Produces five cards, so the scanner can be tried without a camera or a
  * printer. Drop samples/card-genuine.png on the verify page and it should pass;
  * samples/card-forged.png keeps the signature valid but fails the portrait
  * check; samples/card-expired.png passes both and is still refused for being
  * out of date; samples/card-tampered.png fails the signature.
+ * samples/card-enhanced.png is an MV3 card: step 3 of the verify page should
+ * accept samples/portrait-2.jpg as the holder and reject portrait-1.jpg.
+ *
+ * The enhanced card runs face-api on the CPU, so this takes a few seconds.
  *
  * Portraits come from the real photographs in samples/portrait-*.jpg, exported
  * to greyscale 300x400 dumps (portrait-a.rgba / portrait-b.rgba) so hashing
@@ -28,7 +32,9 @@ import { fileURLToPath } from 'node:url';
 import { CARD, PORTRAIT_RECT, QR_RECT, QR_QUIET_ZONE } from '../js/card.js';
 import { pHashHex } from '../js/phash.js';
 import { buildMessage, signMessage, joinBarcodeData, encodeBarcode } from '../js/payload.js';
+import { faceCodeFromPixels } from '../js/facecode.js';
 import { DEMO_SECRET_KEY, ISSUER } from '../js/issuer-key.js';
+import { loadNodeFaceApi, quietTfBanner } from './node-faceapi.mjs';
 
 const OUT_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'samples');
 const PX_PER_MM = 16;
@@ -304,7 +310,7 @@ function drawQr(surface, qr) {
 	}
 }
 
-function renderCard(portrait, qr, cardholder = CARDHOLDER) {
+function renderCard(portrait, qr, cardholder = CARDHOLDER, { enhanced = false } = {}) {
 	const surface = createSurface(WIDTH, HEIGHT, [247, 249, 252]);
 	const navy = [12, 59, 124];
 	const navyDeep = [10, 50, 104];
@@ -373,8 +379,9 @@ function renderCard(portrait, qr, cardholder = CARDHOLDER) {
 	const footerY = HEIGHT - footerH + 1.15 * PX_PER_MM;
 	const footerScale = 3;
 	drawText(surface, 'DEPT OF NATIONAL REGISTRATION', 3.2 * PX_PER_MM, footerY, footerScale, [230, 238, 250]);
-	drawText(surface, 'BLS12-381 SIGNED',
-		WIDTH - 3.2 * PX_PER_MM - textWidth('BLS12-381 SIGNED', footerScale),
+	const footerRight = enhanced ? 'ENHANCED - BLS12-381 SIGNED' : 'BLS12-381 SIGNED';
+	drawText(surface, footerRight,
+		WIDTH - 3.2 * PX_PER_MM - textWidth(footerRight, footerScale),
 		footerY, footerScale, [230, 238, 250]);
 
 	return surface;
@@ -414,10 +421,25 @@ const tamperedEncoded = encodeBarcode(joinBarcodeData(tamperedMessage, signature
 const tampered = renderCard(PORTRAITS.a, tamperedEncoded.qr, TAMPERED_CARDHOLDER);
 writeFileSync(join(OUT_DIR, 'card-tampered.png'), encodePng(WIDTH, HEIGHT, tampered.data));
 
+// Enhanced (MV3): the same cardholder with a signed face code taken from the
+// exact greyscale portrait that is printed, as the issuer page does.
+quietTfBanner();
+await loadNodeFaceApi();
+const signedFace = await faceCodeFromPixels(PORTRAITS.a);
+if (!signedFace) throw new Error('no face found in portrait-a.rgba; cannot build the enhanced sample');
+const enhancedMessage = buildMessage(CARDHOLDER, photoHash, signedFace.code);
+const enhancedSignature = await signMessage(enhancedMessage, DEMO_SECRET_KEY);
+const enhancedData = joinBarcodeData(enhancedMessage, enhancedSignature);
+const enhancedEncoded = encodeBarcode(enhancedData);
+const enhanced = renderCard(PORTRAITS.a, enhancedEncoded.qr, CARDHOLDER, { enhanced: true });
+writeFileSync(join(OUT_DIR, 'card-enhanced.png'), encodePng(WIDTH, HEIGHT, enhanced.data));
+
 console.log(`issuer            ${ISSUER.name}`);
 console.log(`portrait hash     ${photoHash}`);
 console.log(`forged face hash  ${pHashHex(PORTRAITS.b)}`);
 console.log(`expiry            ${CARDHOLDER.expiry} (genuine), ${EXPIRED_CARDHOLDER.expiry} (expired sample)`);
 console.log(`payload           ${barcodeData.length} chars -> ${encoded.byteLength} bytes, QR version ${encoded.qr.version} (${encoded.qr.size} modules)`);
+console.log(`face code         ${signedFace.code}`);
+console.log(`enhanced payload  ${enhancedData.length} chars -> ${enhancedEncoded.byteLength} bytes, QR version ${enhancedEncoded.qr.version} (${enhancedEncoded.qr.size} modules)`);
 console.log(`card raster       ${WIDTH}x${HEIGHT} at ${PX_PER_MM} px/mm`);
-console.log('wrote samples/card-genuine.png, card-forged.png, card-expired.png and card-tampered.png');
+console.log('wrote samples/card-genuine.png, card-forged.png, card-expired.png, card-tampered.png and card-enhanced.png');

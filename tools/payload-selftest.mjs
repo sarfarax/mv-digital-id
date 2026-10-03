@@ -23,7 +23,10 @@ import {
 	validateFields,
 	expiryStatus,
 	ENCODING_BINARY,
-	ENCODING_TEXT
+	ENCODING_TEXT,
+	SCHEMA_ENHANCED,
+	TIER_STANDARD,
+	TIER_ENHANCED
 } from '../js/payload.js';
 import { DEMO_SECRET_KEY, ISSUER } from '../js/issuer-key.js';
 
@@ -127,6 +130,46 @@ await tamper('flipped signature byte is rejected', d => {
 const wrongKey = publicKeyFromSecret('11'.repeat(32));
 const wrongIssuer = await readAndVerify(goodCode, wrongKey);
 check('card from another issuer is rejected', wrongIssuer.ok === false, `stage: ${wrongIssuer.stage}`);
+check('standard card reports the standard tier', good.tier === TIER_STANDARD && good.faceCode === null);
+
+console.log('\nenhanced tier (MV3):');
+const faceCode = '9c3e51a07bd24f8e16a5c0d93f7728be';
+const enhancedMessage = buildMessage(cardholder, photoHash, faceCode);
+check('a face code selects the MV3 prefix', enhancedMessage.startsWith(`${SCHEMA_ENHANCED}#`));
+check('a malformed face code is refused at build time', (() => {
+	try { buildMessage(cardholder, photoHash, 'not-a-code'); return false; } catch { return true; }
+})());
+
+const enhancedParsed = parseMessage(enhancedMessage);
+check('MV3 round-trips the face code', enhancedParsed.faceCode === faceCode && enhancedParsed.tier === TIER_ENHANCED);
+check('MV3 round-trips the fields and photo hash', enhancedParsed.photoHash === photoHash &&
+	FIELDS.every(f => enhancedParsed.fields[f.key] === cardholder[f.key]));
+check('MV2 prefix with an MV3 field count is refused', (() => {
+	try { parseMessage(enhancedMessage.replace(/^MV3/, 'MV2')); return false; } catch { return true; }
+})());
+
+const enhancedSignature = await signMessage(enhancedMessage, DEMO_SECRET_KEY);
+const enhancedData = joinBarcodeData(enhancedMessage, enhancedSignature);
+const enhancedEncoded = encodeBarcode(enhancedData, ENCODING_BINARY);
+console.log(`  MV3 payload: ${enhancedData.length} characters -> ${enhancedEncoded.byteLength} bytes, QR version ${enhancedEncoded.qr.version}, ${enhancedEncoded.qr.size}x${enhancedEncoded.qr.size} modules`);
+const enhancedCode = { binaryData: Array.from(enhancedEncoded.bytes), data: '' };
+const enhanced = await readAndVerify(enhancedCode, ISSUER.publicKey);
+check('genuine enhanced card is accepted', enhanced.ok === true, enhanced.error ?? '');
+check('enhanced card exposes tier and face code', enhanced.tier === TIER_ENHANCED && enhanced.faceCode === faceCode);
+
+async function tamperEnhanced(label, mutate) {
+	const enc = encodeBarcode(mutate(enhancedData), ENCODING_BINARY);
+	const result = await readAndVerify({ binaryData: Array.from(enc.bytes), data: '' }, ISSUER.publicKey);
+	check(label, result.ok === false, `stage: ${result.stage}`);
+}
+
+await tamperEnhanced('swapped face code is rejected', d => d.replace(faceCode, 'f'.repeat(32)));
+// Strip the face code and relabel the card as Standard, hoping the verifier
+// skips the bearer check. The signature covers the prefix, so it fails.
+await tamperEnhanced('downgrade to MV2 by stripping the face code is rejected', d => {
+	const { message: m, signature: s } = splitBarcodeData(d);
+	return joinBarcodeData(m.replace(/^MV3/, 'MV2').replace(`#${faceCode}`, ''), s);
+});
 
 const passed = results.filter(Boolean).length;
 console.log(`\n${passed}/${results.length} checks passed`);

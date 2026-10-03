@@ -247,6 +247,31 @@ button:focus-visible {
 
 fieldset { border: 0; margin: 0; padding: 0; }
 
+.tier-picker { display: grid; gap: 0.5rem; }
+
+.tier-picker legend {
+	font-size: 0.78rem;
+	font-weight: 620;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--ink-soft);
+	margin-bottom: 0.35rem;
+}
+
+.tier-option {
+	display: flex;
+	gap: 0.6rem;
+	align-items: flex-start;
+	padding: 0.6rem 0.75rem;
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	cursor: pointer;
+}
+
+.tier-option > span { display: grid; gap: 0.15rem; }
+.tier-option input { margin-top: 0.2rem; accent-color: var(--accent); }
+.tier-option:has(input:checked) { border-color: var(--accent); background: var(--accent-wash); }
+
 /* ------------------------------------------------------------------ *
  * Buttons
  * ------------------------------------------------------------------ */
@@ -477,14 +502,19 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 	align-items: flex-start;
 }
 
+/* Sex is a single letter; expiry takes the rest and must never break mid-date. */
 .id-card__fields-row > div {
 	min-width: 0;
+	flex: 0 0 auto;
+}
+
+.id-card__fields-row > div:last-child {
 	flex: 1 1 0;
 }
 
-/* Expiry is the wider of the pair; give it more of the column. */
-.id-card__fields-row > div:last-child {
-	flex: 1.6 1 0;
+.id-card__fields-row .id-card__field-value {
+	white-space: nowrap;
+	overflow-wrap: normal;
 }
 
 .id-card__qr {

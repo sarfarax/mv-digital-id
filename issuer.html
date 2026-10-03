@@ -143,6 +143,30 @@
 							</div>
 						</div>
 					</div>
+
+					<fieldset class="tier-picker">
+						<legend>Assurance tier</legend>
+						<label class="tier-option">
+							<input type="radio" name="tier" value="standard" checked>
+							<span>
+								<strong>Standard (MV2)</strong>
+								<span class="field__note">Signature and photo hash. Proves the card and its printed photograph are genuine.</span>
+							</span>
+						</label>
+						<label class="tier-option">
+							<input type="radio" name="tier" value="enhanced">
+							<span>
+								<strong>Enhanced (MV3)</strong>
+								<span class="field__note">Adds a signed 128-bit face code, so a verifier can match the person presenting the card. Loads about 7&nbsp;MB of face models once.</span>
+							</span>
+						</label>
+					</fieldset>
+
+					<div id="faceCodeWrap" class="hidden">
+						<div class="field__label" style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint);">Face code</div>
+						<div class="mono-block" id="faceCodeOut" style="max-height: none;">&mdash;</div>
+						<p class="status-line" id="faceCodeStatus"></p>
+					</div>
 				</div>
 			</section>
 
@@ -259,7 +283,7 @@
 
 						<footer class="id-card__footer">
 							<span id="cardIssuer">Department of National Registration</span>
-							<span>BLS12-381 signed</span>
+							<span id="cardTier">BLS12-381 signed</span>
 						</footer>
 					</article>
 				</div>
@@ -274,7 +298,7 @@
 				<div class="stack">
 					<div>
 						<h3>Signed message</h3>
-						<p class="field__note">Version, the six printed fields, then the portrait hash.</p>
+						<p class="field__note">Version, the six printed fields, the portrait hash and, on Enhanced cards, the face code.</p>
 						<pre class="mono-block" id="messageOut">&mdash;</pre>
 					</div>
 
@@ -302,13 +326,15 @@
 					<h2>What is bound to the signature</h2>
 				</div>
 				<dl class="data-list" id="boundList">
+					<dt>Tier</dt><dd id="boundTier">&mdash;</dd>
 					<dt>Portrait hash</dt><dd id="boundHash">&mdash;</dd>
+					<dt>Face code</dt><dd id="boundFaceCode">&mdash;</dd>
 					<dt>QR version</dt><dd id="boundQrVersion">&mdash;</dd>
 					<dt>Encoding</dt><dd id="boundEncoding">&mdash;</dd>
 				</dl>
 				<p class="note" style="margin-top: 0.9rem;">
-					Changing any printed field, or swapping the portrait for a different face,
-					changes the signed message and invalidates the signature.
+					Changing any printed field, swapping the portrait for a different face, or
+					editing the face code changes the signed message and invalidates the signature.
 				</p>
 			</section>
 

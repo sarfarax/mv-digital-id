@@ -34,7 +34,8 @@
 			Two independent checks. The signature proves the printed details were issued by the
 			authority and have not been edited. The portrait check proves the photograph on the
 			card is the one the authority signed, so a genuine card cannot be reused with a
-			different face pasted over it.
+			different face pasted over it. Enhanced cards add a third check: whether the person
+			presenting the card matches the face the authority signed.
 		</p>
 	</div>
 
@@ -184,6 +185,85 @@
 				</div>
 
 				<div class="status-line" id="photoStatus" style="margin-top: 0.8rem;"></div>
+			</section>
+
+			<!-- ---------------------------------------------------------- -->
+			<!-- Step 3: the person (Enhanced MV3 cards only)               -->
+			<!-- ---------------------------------------------------------- -->
+			<section class="panel" id="bearerPanel">
+				<div class="panel__head">
+					<span class="panel__step">3</span>
+					<h2>Check the person</h2>
+					<span class="badge" id="bearerBadge">Enhanced cards only</span>
+				</div>
+				<p class="panel__hint">
+					Enhanced (MV3) cards carry a signed 128-bit face code. A photo of the person
+					presenting the card is reduced to the same code on this device and compared bit by
+					bit. Nothing is uploaded, and no face models are downloaded for Standard cards.
+				</p>
+
+				<div id="bearerIdle" class="note">Scan an Enhanced card to enable this step.</div>
+
+				<div id="bearerBody" class="hidden">
+					<div class="compare-grid">
+						<figure class="compare-cell" style="margin: 0;">
+							<canvas id="bearerFace" width="300" height="400"></canvas>
+							<figcaption>Face that was compared</figcaption>
+						</figure>
+						<div style="align-self: center; text-align: left;">
+							<div style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint);">Face code distance</div>
+							<div style="font-size: 1.9rem; font-weight: 700; line-height: 1.1;" id="bearerDistance">&mdash;</div>
+							<div class="meter"><div class="meter__fill" id="bearerMeter" style="width: 0;"></div></div>
+							<div class="field__note" id="bearerNote">Out of 128 bits.</div>
+						</div>
+					</div>
+
+					<dl class="data-list" style="margin-bottom: 0.9rem;">
+						<dt>Signed code</dt><dd class="mono-block" style="padding: 0.25rem 0.5rem;" id="signedFaceCode">&mdash;</dd>
+						<dt>Measured code</dt><dd class="mono-block" style="padding: 0.25rem 0.5rem;" id="measuredFaceCode">&mdash;</dd>
+					</dl>
+
+					<div class="slider-row" style="margin-bottom: 0.9rem;">
+						<label for="faceThreshold" style="font-size: 0.85rem; color: var(--ink-soft);">Accept up to</label>
+						<input type="range" id="faceThreshold" min="0" max="64" value="24">
+						<output id="faceThresholdOut">24 bits</output>
+					</div>
+					<p class="field__note" id="faceThresholdNote" style="margin-top: -0.5rem; margin-bottom: 0.9rem;"></p>
+
+					<div class="tabs" role="tablist">
+						<button role="tab" aria-selected="true" data-tab="bearer" data-panel="bearerCamera">Live camera</button>
+						<button role="tab" aria-selected="false" data-tab="bearer" data-panel="bearerUpload">Upload a photo</button>
+					</div>
+
+					<div id="bearerCamera" class="stack">
+						<div class="camera">
+							<video id="bearerVideo" playsinline muted style="transform: scaleX(-1);"></video>
+							<div class="camera__idle" id="bearerCameraIdle">Camera is off</div>
+						</div>
+						<div class="actions">
+							<button type="button" class="btn-primary" id="bearerStart">Start front camera</button>
+							<button type="button" class="btn-primary hidden" id="bearerCapture">Capture and compare</button>
+							<button type="button" class="btn-ghost" id="bearerStop" disabled>Stop</button>
+						</div>
+					</div>
+
+					<div id="bearerUpload" class="stack hidden">
+						<div class="upload-drop" id="bearerDrop">
+							<input type="file" id="bearerInput" accept="image/*" class="hidden">
+							<button type="button" class="btn-ghost btn-small" id="bearerPick">Choose a photo of the person</button>
+							<span>or drop one here</span>
+						</div>
+						<div class="actions">
+							<button type="button" class="btn-ghost btn-small" id="bearerUseCard" disabled>Use the portrait read from the card</button>
+						</div>
+						<p class="field__note">
+							The card portrait option is for demonstrations: it shows the code survives
+							printing and re-photographing, but it proves nothing about who is holding the card.
+						</p>
+					</div>
+
+					<div class="status-line" id="bearerStatus" style="margin-top: 0.8rem;"></div>
+				</div>
 			</section>
 
 			<section class="panel">

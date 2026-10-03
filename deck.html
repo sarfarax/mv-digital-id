@@ -179,10 +179,11 @@
 		<div class="slide__kicker">The proposal</div>
 		<div class="split split--wide-right">
 			<div>
-				<h2 style="font-size:38px;">266 bytes of ink</h2>
+				<h2 style="font-size:38px;">270 bytes of ink</h2>
 				<p style="font-size:19px;">
-					A version 10 QR symbol in a 25 mm square: 0.385 mm per module. Comfortable
-					for card printing, easy for a phone camera.
+					A version 10 QR symbol in a 25 mm square: 0.44 mm per module. Comfortable
+					for card printing, easy for a phone camera. Enhanced cards need version 11:
+					0.41 mm per module in the same square.
 				</p>
 			</div>
 			<figure style="margin:0;">
@@ -267,13 +268,61 @@
 
 	<!-- 18 -->
 	<section class="slide slide--divider">
-		<div class="slide__kicker">Section four</div>
-		<h2>Demonstration</h2>
+		<div class="slide__kicker">Section three (continued)</div>
+		<h2>Extended security</h2>
 	</section>
 
 	<!-- 19 -->
 	<section class="slide">
-		<div class="slide__kicker">Demonstration &mdash; 1 of 4</div>
+		<div class="slide__kicker">Extended security</div>
+		<h2 style="font-size:38px;">MV3: matching the person, not just the photo</h2>
+		<p style="font-size:19px;">
+			<strong>Standard (MV2)</strong> proves the card is genuine and the printed photo
+			matches. <strong>Enhanced (MV3)</strong> adds a signed 128-bit face code and
+			compares it with the person presenting the card &mdash; turning a document check
+			into an identity check. Both tiers coexist; the version prefix tells the verifier
+			which checks to run.
+		</p>
+		<div class="deck-stats">
+			<div class="deck-stat"><div class="deck-stat__value">MV2</div><div class="deck-stat__label">signature + photo hash</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">MV3</div><div class="deck-stat__label">+ signed face code &mdash; live in the demo</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">128 bit</div><div class="deck-stat__label">face code, compared by Hamming distance</div></div>
+		</div>
+		<p class="notes">Both tiers are in the demo build. Show card-enhanced.png on the verify page, then upload portrait-2.jpg (accepted) and portrait-1.jpg (rejected) in step 3.</p>
+		<div class="slide__footer"><span>Extended security</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 20 -->
+	<section class="slide">
+		<div class="slide__kicker">Extended security</div>
+		<h2>How Enhanced verification works</h2>
+		<ol style="font-size:19px;">
+			<li>Same signature, expiry and printed-portrait checks as Standard.</li>
+			<li>If the card is MV3, the verifier loads the face models (about 7 MB, once).</li>
+			<li>The person is photographed; their face is reduced to the same 128-bit code on the device.</li>
+			<li>Bits that differ from the signed code are counted &mdash; pass or fail at Enhanced assurance.</li>
+		</ol>
+		<div class="deck-stats">
+			<div class="deck-stat"><div class="deck-stat__value">0&ndash;17</div><div class="deck-stat__label">bits differ &mdash; same face, printed and re-photographed</div></div>
+			<div class="deck-stat"><div class="deck-stat__value">34</div><div class="deck-stat__label">threshold: 0.1% of different people accepted (LFW)</div></div>
+			<div class="deck-stat deck-stat--bad"><div class="deck-stat__value">32&ndash;56</div><div class="deck-stat__label">bits differ &mdash; different Maldivian sample faces</div></div>
+		</div>
+		<p style="font-size:18px; margin-top:18px;">
+			Nothing is uploaded. No liveness detection yet, so it belongs at staffed counters.
+			A privacy impact assessment and measurement on Maldivian faces precede rollout.
+		</p>
+		<div class="slide__footer"><span>Extended security</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 21 -->
+	<section class="slide slide--divider">
+		<div class="slide__kicker">Section four</div>
+		<h2>Demonstration</h2>
+	</section>
+
+	<!-- 22 -->
+	<section class="slide">
+		<div class="slide__kicker">Demonstration &mdash; 1 of 5</div>
 		<div class="split split--wide-left">
 			<div>
 				<h2 style="font-size:36px;">A genuine card</h2>
@@ -294,9 +343,9 @@
 		<div class="slide__footer"><span>Demonstration</span><span class="page-num"></span></div>
 	</section>
 
-	<!-- 20 -->
+	<!-- 23 -->
 	<section class="slide">
-		<div class="slide__kicker">Demonstration &mdash; 2 of 4</div>
+		<div class="slide__kicker">Demonstration &mdash; 2 of 5</div>
 		<div class="split split--wide-left">
 			<div>
 				<h2 style="font-size:36px;">A reprinted card, different name</h2>
@@ -321,9 +370,9 @@
 		<div class="slide__footer"><span>Demonstration</span><span class="page-num"></span></div>
 	</section>
 
-	<!-- 21 -->
+	<!-- 24 -->
 	<section class="slide">
-		<div class="slide__kicker">Demonstration &mdash; 3 of 4</div>
+		<div class="slide__kicker">Demonstration &mdash; 3 of 5</div>
 		<div class="split split--wide-left">
 			<div>
 				<h2 style="font-size:36px;">A genuine QR, a different face</h2>
@@ -348,9 +397,9 @@
 		<div class="slide__footer"><span>Demonstration</span><span class="page-num"></span></div>
 	</section>
 
-	<!-- 22 -->
+	<!-- 25 -->
 	<section class="slide">
-		<div class="slide__kicker">Demonstration &mdash; 4 of 4</div>
+		<div class="slide__kicker">Demonstration &mdash; 4 of 5</div>
 		<div class="split split--wide-left">
 			<div>
 				<h2 style="font-size:36px;">Correctly signed, out of date</h2>
@@ -375,7 +424,42 @@
 		<div class="slide__footer"><span>Demonstration</span><span class="page-num"></span></div>
 	</section>
 
-	<!-- 23 -->
+	<!-- 25b -->
+	<section class="slide">
+		<div class="slide__kicker">Demonstration &mdash; 5 of 5</div>
+		<div class="split split--wide-left">
+			<div>
+				<h2 style="font-size:36px;">Enhanced: is this the right person?</h2>
+				<div class="verdict verdict--pass">
+					<div class="verdict__icon">&#10003;</div>
+					<div>
+						<div class="verdict__title">Card and holder verified</div>
+						<div class="verdict__detail">The person presenting it matches the signed face code.</div>
+					</div>
+				</div>
+				<div class="verdict verdict--fail" style="margin-top:10px;">
+					<div class="verdict__icon">&#10005;</div>
+					<div>
+						<div class="verdict__title">Person does not match the card</div>
+						<div class="verdict__detail">The card is genuine, but the face presented differs from the face the authority signed.</div>
+					</div>
+				</div>
+				<a class="demo-link" href="scanner.html" target="_blank" rel="noopener">Open the live verifier &rarr;</a>
+				<p style="font-size:17px; margin-top:14px;">
+					A genuine card in the wrong hands. Signature, expiry and portrait all pass;
+					only the face check catches it.
+				</p>
+			</div>
+			<figure style="margin:0;">
+				<img src="samples/card-enhanced.png?v=mv3" alt="Enhanced sample card with a signed face code">
+				<figcaption>samples/card-enhanced.png &mdash; then portrait-2.jpg vs portrait-1.jpg in step 3</figcaption>
+			</figure>
+		</div>
+		<p class="notes">Upload card-enhanced.png, switch step 3 to Upload a photo, drop portrait-2.jpg (accepted), then portrait-1.jpg (rejected). First use loads the face models, which takes a few seconds. Be ready for the question: portrait-3.jpg and portrait-4.jpg are different women who land near or inside the threshold &mdash; the off-the-shelf model is the weak point, which is why measurement on Maldivian faces is on the honesty slide.</p>
+		<div class="slide__footer"><span>Demonstration</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 26 -->
 	<section class="slide slide--center">
 		<div class="slide__kicker">Performance</div>
 		<h2>The whole check takes a tenth of a second</h2>
@@ -392,35 +476,57 @@
 		<div class="slide__footer"><span>Performance</span><span class="page-num"></span></div>
 	</section>
 
-	<!-- 24 -->
+	<!-- 27 -->
+	<section class="slide">
+		<div class="slide__kicker">Design choice</div>
+		<h2 style="font-size:38px;">Why not a link QR?</h2>
+		<p style="font-size:19px;">
+			A URL QR is easy to print and easy to fake. The forger points at a site that
+			<em>looks</em> official and shows a green tick. Clone domains &mdash;
+			<code>verify-dnr.gov.mv</code>, <code>dnr.gov-mv.com</code>, homographs &mdash;
+			are routine phishing. Spotting the wrong domain means reading the URL bar under
+			pressure.
+		</p>
+		<p style="font-size:19px;">
+			A signed payload inverts the trust model: the card carries the evidence, the
+			verifier pins one public key, and the maths pass or fail with no network call. A
+			convincing website cannot forge a BLS12-381 signature.
+		</p>
+		<p class="notes">If someone asks &ldquo;why not just scan to verify.gov.mv?&rdquo;, this is the slide.</p>
+		<div class="slide__footer"><span>Design choice</span><span class="page-num"></span></div>
+	</section>
+
+	<!-- 28 -->
 	<section class="slide">
 		<div class="slide__kicker">Comparison</div>
 		<h2 style="font-size:38px;">Against the alternatives</h2>
 		<table>
 			<thead>
-				<tr><th>Property</th><th>Card today</th><th>Signed QR</th><th>Chip card</th></tr>
+				<tr><th>Property</th><th>Card today</th><th>Link QR</th><th>Signed QR</th><th>Chip card</th></tr>
 			</thead>
 			<tbody>
-				<tr><td>Detects forgery or alteration</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-				<tr><td>Detects a swapped photograph</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-				<tr><td>Needs no reader hardware</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
-				<tr><td>Works with no connectivity</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="partial">Reader dependent</td></tr>
-				<tr><td>Anyone can verify</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td></tr>
-				<tr><td>Marginal cost per card</td><td>&mdash;</td><td class="yes">Effectively zero</td><td class="no">Chip and logistics</td></tr>
-				<tr><td>Confirms the bearer</td><td class="no">No</td><td class="partial">Photo only</td><td class="yes">Fingerprint</td></tr>
-				<tr><td>Available</td><td>&mdash;</td><td class="yes">Next print run</td><td class="partial">Target 2028</td></tr>
+				<tr><td>Detects forgery or alteration</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+				<tr><td>Detects a swapped photograph</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+				<tr><td>Resists a cloned verifier site</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+				<tr><td>Needs no reader hardware</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+				<tr><td>Works with no connectivity</td><td class="yes">Yes</td><td class="no">No</td><td class="yes">Yes</td><td class="partial">Reader dependent</td></tr>
+				<tr><td>Anyone can verify</td><td class="no">No</td><td class="partial">If they trust the URL</td><td class="yes">Yes</td><td class="no">No</td></tr>
+				<tr><td>Marginal cost per card</td><td>&mdash;</td><td class="yes">Zero</td><td class="yes">Zero</td><td class="no">Chip and logistics</td></tr>
+				<tr><td>Confirms the bearer</td><td class="no">No</td><td class="no">No</td><td class="partial">Standard: photo only. Enhanced: face code</td><td class="yes">Fingerprint</td></tr>
+				<tr><td>Available</td><td>&mdash;</td><td class="yes">Next print run</td><td class="yes">Next print run</td><td class="partial">Target 2028</td></tr>
 			</tbody>
 		</table>
 		<div class="slide__footer"><span>Comparison</span><span class="page-num"></span></div>
 	</section>
 
-	<!-- 25 -->
+	<!-- 29 -->
 	<section class="slide">
 		<div class="slide__kicker">Honesty</div>
 		<h2>What this does not do</h2>
 		<ul>
 			<li><strong>No offline revocation.</strong> A card reported stolen still verifies. That needs a connected status check.</li>
-			<li><strong>It confirms the picture, not the person.</strong> Matching the bearer stays a human judgement, as it is today.</li>
+			<li><strong>Standard cards confirm the picture, not the person.</strong> Enhanced cards add a face check, but without liveness detection &mdash; staffed counters only.</li>
+			<li><strong>The face model is not tuned for Maldivian faces.</strong> Two different sample women land inside the threshold. It must be measured on real enrolment photos, and likely replaced, before anyone relies on it.</li>
 			<li><strong>Key compromise is catastrophic.</strong> The signing key must live in an HSM under split control.</li>
 			<li><strong>Nothing is encrypted.</strong> A scanner reads what the card already shows &mdash; but machine-readable is not the same as visible.</li>
 		</ul>
@@ -428,7 +534,7 @@
 		<div class="slide__footer"><span>Honesty</span><span class="page-num"></span></div>
 	</section>
 
-	<!-- 26 -->
+	<!-- 30 -->
 	<section class="slide">
 		<div class="slide__kicker">Delivery</div>
 		<h2 style="font-size:38px;">Rollout and cost</h2>
@@ -455,7 +561,7 @@
 		<div class="slide__footer"><span>Delivery</span><span class="page-num"></span></div>
 	</section>
 
-	<!-- 27 -->
+	<!-- 31 -->
 	<section class="slide slide--center">
 		<div class="slide__kicker">Coexistence</div>
 		<h2>Layers, not competitors</h2>
@@ -471,7 +577,7 @@
 		<div class="slide__footer"><span>Coexistence</span><span class="page-num"></span></div>
 	</section>
 
-	<!-- 28 -->
+	<!-- 32 -->
 	<section class="slide">
 		<div class="slide__kicker">The ask</div>
 		<h2>Authorise a time-boxed pilot</h2>

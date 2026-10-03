@@ -6,12 +6,18 @@
  * Layout, following the '#'-separated convention of oelna/signed-qr-codes:
  *
  *   MV2#idNumber#name#sex#dob#expiry#address#photoHash#signature
- *   \_______________ signed message _______________/
+ *   MV3#idNumber#name#sex#dob#expiry#address#photoHash#faceCode#signature
+ *   \___________________ signed message ____________________/
  *
- * Everything up to and including the photo hash is signed as one string, so
- * neither a printed field nor the portrait can be altered without breaking the
- * BLS signature. The whole thing is then LZString-compressed before it is
- * drawn as a barcode.
+ * Everything before the signature is signed as one string, so neither a
+ * printed field, the portrait nor the face code can be altered without
+ * breaking the BLS signature. The whole thing is then LZString-compressed
+ * before it is drawn as a barcode.
+ *
+ * MV2 is the Standard tier. MV3, the Enhanced tier, appends a face code so the
+ * verifier can compare the person presenting the card, not just the printed
+ * photograph. Both are current; the version prefix tells the reader how many
+ * fields to expect and which checks apply.
  *
  * MV1 carried a phone number in the position now held by the expiry date.
  * Because the fields are positional, a reader that accepted both versions would
@@ -22,9 +28,19 @@ import { nobleBLS } from './lib/noble-bls.js';
 import { LZString } from './lib/lz-string.js';
 import { qrcodegen } from './lib/qr-gen-lib.js';
 import { isValidHash } from './phash.js';
+import { isValidFaceCode, FACE_CODE_HEX } from './facecode.js';
 
-export const SCHEMA_VERSION = 'MV2';
+export const SCHEMA_STANDARD = 'MV2';
+export const SCHEMA_ENHANCED = 'MV3';
+export const SUPPORTED_VERSIONS = [SCHEMA_STANDARD, SCHEMA_ENHANCED];
 export const SEPARATOR = '#';
+
+export const TIER_STANDARD = 'standard';
+export const TIER_ENHANCED = 'enhanced';
+
+export function tierOf(version) {
+	return version === SCHEMA_ENHANCED ? TIER_ENHANCED : TIER_STANDARD;
+}
 
 export const FIELDS = [
 	{ key: 'idNumber', label: 'ID Card Number', maxLength: 16 },
@@ -174,29 +190,44 @@ export function validateFields(fields) {
  * Message assembly
  * ------------------------------------------------------------------ */
 
-/** Build the signed portion: version, the six fields, then the photo hash. */
-export function buildMessage(fields, photoHash) {
+/**
+ * Build the signed portion: version, the six fields, the photo hash and, for
+ * an Enhanced card, the face code. Passing a face code is what selects MV3.
+ */
+export function buildMessage(fields, photoHash, faceCode = null) {
 	if (!isValidHash(photoHash)) throw new Error('photoHash must be 16 lowercase hex characters');
+	if (faceCode !== null && !isValidFaceCode(faceCode)) {
+		throw new Error(`faceCode must be ${FACE_CODE_HEX} lowercase hex characters`);
+	}
 	const clean = sanitizeFields(fields);
-	return [SCHEMA_VERSION, ...FIELD_KEYS.map(key => clean[key]), photoHash].join(SEPARATOR);
+	const values = FIELD_KEYS.map(key => clean[key]);
+	return faceCode === null
+		? [SCHEMA_STANDARD, ...values, photoHash].join(SEPARATOR)
+		: [SCHEMA_ENHANCED, ...values, photoHash, faceCode].join(SEPARATOR);
 }
 
 /** Split a signed message back into its parts. Throws if it is malformed. */
 export function parseMessage(message) {
 	const parts = String(message).split(SEPARATOR);
-	const expected = FIELD_KEYS.length + 2;
+	const version = parts[0];
+	if (!SUPPORTED_VERSIONS.includes(version)) throw new Error(`unsupported schema version "${version}"`);
+
+	const enhanced = version === SCHEMA_ENHANCED;
+	const expected = FIELD_KEYS.length + (enhanced ? 3 : 2);
 	if (parts.length !== expected) {
-		throw new Error(`expected ${expected} '#'-separated parts, found ${parts.length}`);
+		throw new Error(`expected ${expected} '#'-separated parts for ${version}, found ${parts.length}`);
 	}
-	const [version, ...rest] = parts;
-	if (version !== SCHEMA_VERSION) throw new Error(`unsupported schema version "${version}"`);
+
+	const rest = parts.slice(1);
+	const faceCode = enhanced ? rest.pop() : null;
+	if (enhanced && !isValidFaceCode(faceCode)) throw new Error(`face code is not ${FACE_CODE_HEX} hex characters`);
 
 	const photoHash = rest.pop();
 	if (!isValidHash(photoHash)) throw new Error('photo hash is not 16 hex characters');
 
 	const fields = {};
 	FIELD_KEYS.forEach((key, index) => { fields[key] = rest[index]; });
-	return { version, fields, photoHash };
+	return { version, tier: tierOf(version), fields, photoHash, faceCode };
 }
 
 /** Split barcode text into the signed message and its trailing signature. */
@@ -269,7 +300,7 @@ export function encodeBarcode(barcodeData, mode = ENCODING_BINARY) {
 }
 
 function looksLikePayload(value) {
-	return typeof value === 'string' && value.startsWith(SCHEMA_VERSION + SEPARATOR);
+	return typeof value === 'string' && SUPPORTED_VERSIONS.some(version => value.startsWith(version + SEPARATOR));
 }
 
 /**
@@ -330,7 +361,10 @@ export async function readAndVerify(code, publicKeyHex) {
 		barcodeData: decoded.barcodeData,
 		message,
 		signature,
+		version: parsed.version,
+		tier: parsed.tier,
 		fields: parsed.fields,
-		photoHash: parsed.photoHash
+		photoHash: parsed.photoHash,
+		faceCode: parsed.faceCode
 	};
 }

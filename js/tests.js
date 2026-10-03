@@ -31,8 +31,10 @@ import {
 	readAndVerify,
 	expiryStatus,
 	ENCODING_BINARY,
-	ENCODING_TEXT
+	ENCODING_TEXT,
+	TIER_ENHANCED
 } from './payload.js';
+import { faceCodeFromPixels, faceCodeDistance, FACE_MATCH_THRESHOLD, FACE_CODE_BITS } from './facecode.js';
 import { DEMO_SECRET_KEY, ISSUER } from './issuer-key.js';
 
 const MATCH_THRESHOLD = 12;
@@ -457,6 +459,71 @@ async function run() {
 
 	const wrongIssuer = await readAndVerify(flat.code, '8'.repeat(96));
 	record('card from an untrusted issuer is rejected', wrongIssuer.ok === false, `stage: ${wrongIssuer.stage}`);
+
+	/* ---------------- enhanced card ---------------- */
+	group('Enhanced card (MV3): signed face code');
+
+	const modelStart = performance.now();
+	const signedFace = await faceCodeFromPixels(portraitA.imageData);
+	if (record('face found in the normalised portrait', Boolean(signedFace),
+		signedFace ? `models + embedding ${Math.round(performance.now() - modelStart)} ms` : 'no face')) {
+		const faceBits = (a, b) => `${faceCodeDistance(a, b)} of ${FACE_CODE_BITS} bits, limit ${FACE_MATCH_THRESHOLD}`;
+
+		const enhancedMessage = buildMessage(CARDHOLDER, hashA, signedFace.code);
+		const enhancedSignature = await signMessage(enhancedMessage, DEMO_SECRET_KEY);
+		const enhancedData = joinBarcodeData(enhancedMessage, enhancedSignature);
+		const enhancedEncoded = encodeBarcode(enhancedData, ENCODING_BINARY);
+		record('MV3 payload fits a card QR', enhancedEncoded.qr.version <= 11,
+			`v${enhancedEncoded.qr.version}, ${enhancedEncoded.byteLength} bytes`);
+
+		// The noise is random, and a live scanner gets many frames; allow a few shots.
+		const enhancedCard = renderCard(portraitA.canvas, enhancedEncoded.qr);
+		let enhancedPhoto;
+		let enhancedScan;
+		let shots = 0;
+		while (shots < 3 && !enhancedScan?.code) {
+			shots++;
+			enhancedPhoto = photographCard(
+				enhancedCard,
+				[{ x: 170, y: 120 }, { x: 1100, y: 160 }, { x: 1080, y: 690 }, { x: 150, y: 630 }],
+				1280, 800,
+				{ noise: 14, brightness: 0.88, offset: 14 }
+			);
+			enhancedScan = decodeFrom(enhancedPhoto);
+		}
+		showStage('Enhanced card, photographed', enhancedPhoto);
+
+		if (record('QR found on the enhanced card', Boolean(enhancedScan.code), `${shots} shot${shots === 1 ? '' : 's'}`)) {
+			const verified = await readAndVerify(enhancedScan.code, ISSUER.publicKey);
+			record('signature valid and tier is enhanced', verified.ok === true && verified.tier === TIER_ENHANCED,
+				verified.error ?? verified.tier);
+
+			const recovered = portraitFromCardPhoto(enhancedScan.imageData, enhancedScan.code.location);
+			const printedFace = recovered ? await faceCodeFromPixels(recovered.imageData) : null;
+			record('printed portrait reproduces the signed face code',
+				Boolean(printedFace) && faceCodeDistance(verified.faceCode, printedFace.code) <= FACE_MATCH_THRESHOLD,
+				printedFace ? faceBits(verified.faceCode, printedFace.code) : 'no face found');
+
+			// The original colour photograph stands in for the holder in front of the camera.
+			const holder = await faceCodeFromPixels(frameToImageData(personA, 720, Math.round(720 * personA.naturalHeight / personA.naturalWidth)));
+			record('colour photo of the holder matches',
+				Boolean(holder) && faceCodeDistance(verified.faceCode, holder.code) <= FACE_MATCH_THRESHOLD,
+				holder ? faceBits(verified.faceCode, holder.code) : 'no face found');
+
+			const impostor = await faceCodeFromPixels(frameToImageData(personB, 720, Math.round(720 * personB.naturalHeight / personB.naturalWidth)));
+			record('a different person is rejected',
+				Boolean(impostor) && faceCodeDistance(verified.faceCode, impostor.code) > FACE_MATCH_THRESHOLD,
+				impostor ? faceBits(verified.faceCode, impostor.code) : 'no face found');
+		}
+
+		const flipped = signedFace.code.replace(/^./, c => ((Number.parseInt(c, 16) ^ 0xf).toString(16)));
+		const swappedEnc = encodeBarcode(enhancedData.replace(signedFace.code, flipped), ENCODING_BINARY);
+		const swappedCanvas = makeCanvas(1, 1);
+		swappedEnc.qr.drawCanvas(6, 4, swappedCanvas);
+		const swappedScan = decodeFrom(swappedCanvas);
+		const swapped = swappedScan.code ? await readAndVerify(swappedScan.code, ISSUER.publicKey) : { ok: false, stage: 'decode' };
+		record('edited face code is rejected', swapped.ok === false, `stage: ${swapped.stage}`);
+	}
 
 	/* ---------------- summary ---------------- */
 	const passed = results.filter(Boolean).length;

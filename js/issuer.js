@@ -21,8 +21,10 @@ import {
 	verifyMessage,
 	encodeBarcode,
 	chunkHex,
-	randomSecretKey
+	randomSecretKey,
+	TIER_ENHANCED
 } from './payload.js';
+import { faceCodeFromPixels, faceModelsLoaded } from './facecode.js';
 import { ISSUER, DEMO_SECRET_KEY } from './issuer-key.js';
 
 applyCardGeometry();
@@ -45,6 +47,10 @@ const dom = {
 	cropZoomOut: $('cropZoomOut'),
 	portraitPreview: $('portraitPreview'),
 	photoHashOut: $('photoHashOut'),
+	tierInputs: document.querySelectorAll('input[name="tier"]'),
+	faceCodeWrap: $('faceCodeWrap'),
+	faceCodeOut: $('faceCodeOut'),
+	faceCodeStatus: $('faceCodeStatus'),
 
 	secretKey: $('secretKey'),
 	publicKey: $('publicKey'),
@@ -70,6 +76,7 @@ const dom = {
 	cardAddress: $('cardAddress'),
 	cardQr: $('cardQr'),
 	cardIssuer: $('cardIssuer'),
+	cardTier: $('cardTier'),
 	printCard: $('printCard'),
 	downloadCard: $('downloadCard'),
 
@@ -77,7 +84,9 @@ const dom = {
 	signatureOut: $('signatureOut'),
 	barcodeData: $('barcodeData'),
 	payloadSize: $('payloadSize'),
+	boundTier: $('boundTier'),
 	boundHash: $('boundHash'),
+	boundFaceCode: $('boundFaceCode'),
 	boundQrVersion: $('boundQrVersion'),
 	boundEncoding: $('boundEncoding')
 };
@@ -87,6 +96,8 @@ const state = {
 	crop: null,        // crop rectangle in source-image pixels
 	portrait: null,    // { imageData, canvas, dataUrl } from canonicalPortrait
 	photoHash: null,
+	faceCode: null,    // MV3 only; null until a face is found in the current portrait
+	faceRun: 0,        // discards face-code results for a portrait that has since changed
 	issued: null       // the last successfully signed card
 };
 
@@ -329,7 +340,65 @@ function refreshPortrait() {
 	dom.cardPortraitEmpty.classList.add('hidden');
 
 	if (state.issued) invalidateIssued('Portrait changed. Sign again to refresh the QR code.');
+	refreshFaceCode();
 }
+
+/* ------------------------------------------------------------------ *
+ * Assurance tier and face code
+ * ------------------------------------------------------------------ */
+
+function selectedTier() {
+	return document.querySelector('input[name="tier"]:checked')?.value ?? 'standard';
+}
+
+let faceCodeTimer = null;
+
+/*
+ * The zoom slider fires continuously and each embedding takes a few hundred
+ * milliseconds, so wait for the framing to settle. The face code is taken from
+ * the normalised portrait — the same greyscale image that is printed and
+ * hashed — so the signed template describes the photograph on the card.
+ */
+function refreshFaceCode() {
+	state.faceCode = null;
+	clearTimeout(faceCodeTimer);
+	const run = ++state.faceRun;
+
+	if (selectedTier() !== TIER_ENHANCED) return;
+	dom.faceCodeOut.textContent = '—';
+	if (!state.portrait) {
+		setStatus(dom.faceCodeStatus, 'Add a portrait to compute the face code.', null);
+		return;
+	}
+
+	setStatus(dom.faceCodeStatus, faceModelsLoaded() ? 'Finding the face…' : 'Loading face models (about 7 MB, once)…', null);
+	faceCodeTimer = setTimeout(async () => {
+		try {
+			const started = performance.now();
+			const face = await faceCodeFromPixels(state.portrait.imageData);
+			if (run !== state.faceRun) return;
+			if (!face) {
+				setStatus(dom.faceCodeStatus, 'No face found in the frame. Zoom out or re-centre the portrait.', 'error');
+				return;
+			}
+			state.faceCode = face.code;
+			dom.faceCodeOut.textContent = chunkHex(face.code, 4, ' ');
+			setStatus(dom.faceCodeStatus,
+				`128-bit face code from the framed portrait (detector confidence ${Math.round(face.score * 100)}%, ${Math.round(performance.now() - started)} ms).`, 'ok');
+		} catch (error) {
+			if (run !== state.faceRun) return;
+			console.error(error);
+			setStatus(dom.faceCodeStatus, `Face models could not be loaded: ${error.message}`, 'error');
+		}
+	}, 250);
+}
+
+dom.tierInputs.forEach(input => input.addEventListener('change', () => {
+	const enhanced = selectedTier() === TIER_ENHANCED;
+	dom.faceCodeWrap.classList.toggle('hidden', !enhanced);
+	refreshFaceCode();
+	if (state.issued) invalidateIssued('Assurance tier changed. Sign again to refresh the QR code.');
+}));
 
 /* ------------------------------------------------------------------ *
  * Keys
@@ -427,6 +496,11 @@ dom.generate.addEventListener('click', async () => {
 		setStatus(dom.generateStatus, 'Add a portrait before signing.', 'error');
 		return;
 	}
+	const enhanced = selectedTier() === TIER_ENHANCED;
+	if (enhanced && !state.faceCode) {
+		setStatus(dom.generateStatus, 'Enhanced cards need a face code. Wait for it to finish, or adjust the portrait until a face is found.', 'error');
+		return;
+	}
 
 	const secret = dom.secretKey.value.replace(/\s+/g, '');
 	const publicKey = refreshPublicKey();
@@ -443,24 +517,28 @@ dom.generate.addEventListener('click', async () => {
 		// arithmetic blocks the main thread.
 		await new Promise(resolve => setTimeout(resolve, 0));
 
-		const message = buildMessage(clean, state.photoHash);
+		const faceCode = enhanced ? state.faceCode : null;
+		const message = buildMessage(clean, state.photoHash, faceCode);
 		const signature = await signMessage(message, secret);
 		const barcodeData = joinBarcodeData(message, signature);
 		const encoded = encodeBarcode(barcodeData, dom.encodingMode.value);
 
 		drawQr(encoded.qr);
 
-		state.issued = { message, signature, barcodeData, encoded, publicKey, fields: clean };
+		state.issued = { message, signature, barcodeData, encoded, publicKey, fields: clean, faceCode };
 
 		dom.messageOut.textContent = message;
 		dom.signatureOut.textContent = chunkHex(signature, 8, ' ');
 		dom.barcodeData.value = barcodeData;
 		dom.payloadSize.textContent = `${encoded.byteLength} bytes`;
 		dom.payloadSize.className = 'badge';
+		dom.boundTier.textContent = enhanced ? 'Enhanced (MV3)' : 'Standard (MV2)';
 		dom.boundHash.textContent = state.photoHash;
+		dom.boundFaceCode.textContent = faceCode ?? 'None — Standard tier';
 		dom.boundQrVersion.textContent = `${encoded.qr.version} (${encoded.qr.size}×${encoded.qr.size} modules)`;
 		dom.boundEncoding.textContent = encoded.mode === 'text' ? 'URL-safe text' : 'Binary byte mode';
 		dom.cardIssuer.textContent = ISSUER.name;
+		dom.cardTier.textContent = enhanced ? 'Enhanced · BLS12-381 signed' : 'BLS12-381 signed';
 
 		dom.idCard.classList.remove('id-card--placeholder');
 		dom.cardState.textContent = 'Signed';

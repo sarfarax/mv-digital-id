@@ -58,8 +58,10 @@
 			<li><a href="#how">How it works</a></li>
 			<li><a href="#issuance">Issuance</a></li>
 			<li><a href="#verification">Verification</a></li>
+			<li><a href="#link-qr">Why not a link?</a></li>
 			<li><a href="#comparison">Comparison</a></li>
 			<li><a href="#security">Security analysis</a></li>
+			<li><a href="#extended-security">Extended security: the Enhanced tier</a></li>
 			<li><a href="#roadmap">Deployment roadmap</a></li>
 			<li><a href="#cost">Cost</a></li>
 			<li><a href="#governance">Governance and privacy</a></li>
@@ -99,7 +101,10 @@
 			layer covers the case neither reaches: an in-person, offline check by anyone,
 			anywhere, starting now. It fills the gap until 2027&ndash;2028, and it keeps
 			earning its place afterwards as the fallback for the islands where readers and
-			bandwidth arrive last.
+			bandwidth arrive last. An optional <strong>Enhanced (MV3)</strong> tier, working
+			in the reference implementation, adds face matching against the person presenting
+			the card for higher-assurance checkpoints; see
+			<a href="#extended-security">Extended security</a>.
 		</p>
 	</section>
 
@@ -246,8 +251,8 @@
 			The proposed card face, in an ICAO-style navy layout with a high-contrast outer
 			frame so a camera can find the edges. Illustrative mockup with a real sample
 			portrait and synthetic cardholder data; not an official artefact. The QR occupies
-			a 25&nbsp;mm square and encodes 266&nbsp;bytes as a version&nbsp;10 symbol
-			(0.385&nbsp;mm per module).
+			a 25&nbsp;mm square and encodes about 270&nbsp;bytes as a version&nbsp;10 symbol
+			(0.44&nbsp;mm per module).
 		</figcaption>
 	</figure>
 
@@ -327,10 +332,11 @@
 
 	<p>
 		The payload is compressed before encoding. A complete signed record is 302
-		characters, compressing to 266 bytes, which encodes as a version 10 QR symbol of 57
-		modules. In the 25 mm square allocated on the card that is 0.385 mm per module
+		characters, compressing to about 270 bytes, which encodes as a version 10 QR symbol
+		of 57 modules. In the 25 mm square allocated on the card that is 0.44 mm per module
 		&mdash; comfortable for commercial card printing and well within the range of a
-		modern phone camera.
+		modern phone camera. An Enhanced card&rsquo;s extra face code takes it to version
+		11, 61 modules, 0.41 mm per module, in the same square.
 	</p>
 
 	<h2 id="issuance">Issuance</h2>
@@ -439,6 +445,55 @@
 		build so that an offline device still verifies correctly.
 	</p>
 
+	<h2 id="link-qr">Why not a link?</h2>
+
+	<p>
+		The obvious alternative is a QR code that opens a URL &mdash; for example
+		<code>https://verify.dnr.gov.mv/card?id=…</code> &mdash; and shows a green tick if
+		the server says the card is valid. That pattern is familiar from event tickets and
+		product labels, but it is a poor fit for identity.
+	</p>
+
+	<p>
+		Anyone can print a QR code. A forger does not need to break cryptography; they
+		only need a domain that <em>looks</em> official and a page that <em>looks</em>
+		like a verifier. At scan time the phone opens a browser, the page renders a
+		plausible response &mdash; name, photo, &ldquo;verified&rdquo; &mdash; and the
+		clerk sees what they expected to see. Nothing on the card itself was checked.
+	</p>
+
+	<div class="callout callout--limit">
+		<span class="callout__label">Phishing by domain clone</span>
+		<p>
+			Clone domains are a routine attack. A registrar will sell
+			<code>verify-dnr.gov.mv</code>, <code>dnr-verify.gov.mv</code>,
+			<code>dnr.gov-mv.com</code>, or a homograph using a visually similar character.
+			At a glance, or on a small screen, these read as the real ministry site. The QR
+			on a forged card never has to point at the genuine domain at all &mdash; and even
+			when it does, a man-in-the-middle on a compromised network can substitute a
+			different page. Detecting the wrong domain requires the operator to inspect the
+			URL bar character by character, under time pressure, often on someone else&rsquo;s
+			phone. That is not a control; it is hope.
+		</p>
+	</div>
+
+	<p>
+		A link-based design also fails offline. If the checker is on an island with no
+		data, or the ministry server is down, there is no verdict at all. The signed
+		payload inverts the dependency: the QR carries the evidence, the public key is
+		pinned in the verifier, and the mathematics either pass or fail with no network
+		call. A cloned website cannot forge a BLS12-381 signature without the private key,
+		however convincing its HTML looks.
+	</p>
+
+	<p>
+		Online status checks still have a place &mdash; for revocation, for audit, for
+		answering &ldquo;is this card still valid <em>right now</em>?&rdquo; &mdash; but
+		they should sit beside cryptographic verification, not replace it. The card should
+		prove what was issued; a server should optionally say whether that issuance has
+		since been withdrawn.
+	</p>
+
 	<h2 id="comparison">Comparison</h2>
 
 	<table>
@@ -446,30 +501,34 @@
 			<tr>
 				<th>Property</th>
 				<th>Card today</th>
+				<th>Link QR</th>
 				<th>Signed QR</th>
 				<th>Chip card</th>
 			</tr>
 		</thead>
 		<tbody>
-			<tr><td>Detects a forged card</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-			<tr><td>Detects altered printed data</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-			<tr><td>Detects a substituted photograph</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
-			<tr><td>Works with no reader hardware</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
-			<tr><td>Works with no internet connection</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="partial">Reader dependent</td></tr>
-			<tr><td>Verifiable by any member of the public</td><td class="no">No</td><td class="yes">Yes</td><td class="no">No</td></tr>
-			<tr><td>Marginal cost per card</td><td>&mdash;</td><td class="yes">Effectively zero</td><td class="no">Chip, encoding and logistics</td></tr>
-			<tr><td>Requires replacing every card</td><td>&mdash;</td><td class="yes">No, reissue naturally</td><td class="no">Yes</td></tr>
-			<tr><td>Supports revocation of a stolen card</td><td class="no">No</td><td class="no">Not offline</td><td class="partial">With online check</td></tr>
-			<tr><td>Confirms the bearer is the holder</td><td class="no">No</td><td class="partial">Photo binding only</td><td class="yes">Fingerprint</td></tr>
-			<tr><td>Supports payments and online authentication</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td></tr>
-			<tr><td>Available</td><td>&mdash;</td><td class="yes">Next print run</td><td class="partial">Target 2028</td></tr>
+			<tr><td>Detects a forged card</td><td class="no">No</td><td class="no">No &mdash; any site can say yes</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+			<tr><td>Detects altered printed data</td><td class="no">No</td><td class="partial">Server dependent</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+			<tr><td>Detects a substituted photograph</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td><td class="yes">Yes</td></tr>
+			<tr><td>Resists a cloned verification website</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes &mdash; signature, not HTML</td><td class="yes">Yes</td></tr>
+			<tr><td>Works with no reader hardware</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="yes">Yes</td><td class="no">No</td></tr>
+			<tr><td>Works with no internet connection</td><td class="yes">Yes</td><td class="no">No</td><td class="yes">Yes</td><td class="partial">Reader dependent</td></tr>
+			<tr><td>Verifiable by any member of the public</td><td class="no">No</td><td class="partial">If they trust the URL</td><td class="yes">Yes</td><td class="no">No</td></tr>
+			<tr><td>Marginal cost per card</td><td>&mdash;</td><td class="yes">Effectively zero</td><td class="yes">Effectively zero</td><td class="no">Chip, encoding and logistics</td></tr>
+			<tr><td>Requires replacing every card</td><td>&mdash;</td><td class="yes">No, reissue naturally</td><td class="yes">No, reissue naturally</td><td class="no">Yes</td></tr>
+			<tr><td>Supports revocation of a stolen card</td><td class="no">No</td><td class="partial">Online check</td><td class="no">Not offline</td><td class="partial">With online check</td></tr>
+			<tr><td>Confirms the bearer is the holder</td><td class="no">No</td><td class="no">No</td><td class="partial">Photo binding only</td><td class="yes">Fingerprint</td></tr>
+			<tr><td>Supports payments and online authentication</td><td class="no">No</td><td class="no">No</td><td class="no">No</td><td class="yes">Yes</td></tr>
+			<tr><td>Available</td><td>&mdash;</td><td class="yes">Next print run</td><td class="yes">Next print run</td><td class="partial">Target 2028</td></tr>
 		</tbody>
 	</table>
 	<p class="caption">
 		The chip card is stronger where it is deployed and does things this cannot,
-		notably fingerprint matching and payments. The columns are complementary, not
-		alternatives: the honest reading is that the middle column is what the right-hand
-		column cannot be until readers exist everywhere.
+		notably fingerprint matching and payments. A link QR shares the signed QR&rsquo;s
+		print cost but none of its security: verification reduces to trusting a URL and a
+		server response. The signed QR and chip columns are complementary, not
+		alternatives &mdash; the signed layer is what the chip cannot be until readers
+		exist everywhere.
 	</p>
 
 	<h2 id="security">Security analysis</h2>
@@ -484,6 +543,7 @@
 			<tr><td>Replacing the photograph on a genuine card</td><td>Signature still valid; the perceptual hash no longer matches. Rejected at the portrait step.</td></tr>
 			<tr><td>Extending the validity of an expired card</td><td>Expiry is inside the signature. Rejected.</td></tr>
 			<tr><td>Copying a valid QR onto a different card</td><td>The QR carries the identity and photo hash of its original holder, so the printed face and the signed data diverge. Rejected.</td></tr>
+			<tr><td>QR pointing at a cloned verification website</td><td>Irrelevant: the verifier checks a signature against a pinned public key, not a server response. A plausible page at <code>verify-dnr.gov.mv</code> or <code>dnr.gov-mv.com</code> cannot mint a valid signature.</td></tr>
 			<tr><td>A card signed by a different authority</td><td>Verification is against one pinned public key. Rejected.</td></tr>
 		</tbody>
 	</table>
@@ -494,29 +554,177 @@
 		<span class="callout__label">Stated plainly</span>
 		<ul>
 			<li><strong>No revocation offline.</strong> A signature says &ldquo;this was issued&rdquo;, never &ldquo;this is still valid&rdquo;. A card reported stolen the day after issue still verifies. Only an online status check closes this, and that necessarily requires connectivity.</li>
-			<li><strong>It confirms the picture, not the person.</strong> The portrait check proves the photograph on the card is the signed one. It does not prove the bearer is the person in the photograph. That remains a human judgement, exactly as it is today, unless biometric matching is added.</li>
+			<li><strong>On a Standard card, it confirms the picture, not the person.</strong> The portrait check proves the photograph on the card is the signed one. It does not prove the bearer is the person in the photograph; that remains a human judgement, exactly as it is today. The Enhanced tier below adds that check.</li>
 			<li><strong>Private key compromise is catastrophic.</strong> An attacker with the signing key can mint cards indistinguishable from genuine ones. This is the argument for an HSM and for a rehearsed key rotation plan.</li>
 			<li><strong>Nothing is encrypted.</strong> Anyone who scans the card reads every field &mdash; exactly as they could by reading the card. Whether a home address belongs in a machine-readable code any passer-by can scan is a policy question, addressed in section 11.</li>
-			<li><strong>A genuine card presented by a look-alike.</strong> Perceptual hashing tolerates change by construction, so a sufficiently similar face could fall inside the threshold. The tolerance is configurable, and this is the specific weakness that face-vector matching would address.</li>
+			<li><strong>A genuine card presented by a look-alike.</strong> On a Standard card the operator compares the face to the photograph by eye, as today. The Enhanced tier&rsquo;s face code addresses this, within its measured error rates.</li>
 		</ul>
 	</div>
 
-	<h3>Extension: face vector matching</h3>
+	<h2 id="extended-security">Extended security: the Enhanced tier</h2>
 
 	<p>
-		A future card tier can additionally carry a compact binary code derived from a face
-		recognition embedding &mdash; a locality-sensitive hash, not a cryptographic one,
-		compared by Hamming distance in the same way. Published results place 128-bit
-		PCA-ITQ face templates at around 99% true-accept at 1% false-accept.<sup><a href="#r9">9</a></sup>
-		Sixteen bytes fits in the existing QR budget with room to spare.
+		The Standard card, <strong>MV2</strong> &mdash; six signed fields, a perceptual photo
+		hash, and offline BLS12-381 verification &mdash; closes the forgery and tampering gaps
+		on the card itself. It does not close every gap a high-assurance checkpoint might
+		want: notably, confirming that the person presenting the card is the person in the
+		photograph.
 	</p>
 
 	<p>
-		That upgrade is what would let a verifier compare the signed template against a live
-		capture of the person standing there, turning a document check into an identity
-		check. It is designed as an optional tier so that standard cards remain fully valid.
-		It also raises materially larger privacy questions, since a biometric template is a
-		linkable identifier in a way that a photo hash is not.
+		The <strong>Enhanced</strong> tier, <strong>MV3</strong>, adds a signed face code on
+		top of MV2 without invalidating standard cards. Both populations verify correctly;
+		the version prefix tells the reader which checks apply. It is implemented in the
+		reference implementation &mdash; issuer, verifier, sample card and tests &mdash; and
+		can be tried today. What remains is policy approval and measurement on the real
+		population.
+	</p>
+
+	<h3>Two assurance levels</h3>
+
+	<table>
+		<thead><tr><th>Level</th><th>Schema</th><th>What it proves</th><th>Typical use</th></tr></thead>
+		<tbody>
+			<tr>
+				<td><strong>Standard</strong></td>
+				<td>MV2</td>
+				<td>The card is genuine, unaltered, in date, and the printed photograph matches the signed one.</td>
+				<td>Everyday in-person checks: counters, ferries, clinics, workplaces.</td>
+			</tr>
+			<tr>
+				<td><strong>Enhanced</strong></td>
+				<td>MV3</td>
+				<td>Everything in Standard, plus the face of the person presenting the card matches a signed face code.</td>
+				<td>Higher-assurance gates: banking, immigration, land allocation, any step where bearer matching matters.</td>
+			</tr>
+		</tbody>
+	</table>
+
+	<h3>MV3 payload extension</h3>
+
+	<p>
+		MV3 adds one field to the signed message: a compact binary code derived from a face
+		recognition embedding. It is a <em>locality-sensitive hash</em> &mdash; compared by
+		Hamming distance, like the perceptual photo hash &mdash; not a cryptographic hash of
+		raw floating-point vectors. A SHA-256 of an embedding would reject the slightest
+		camera noise; a locality-sensitive code stays stable across lighting and capture
+		while still separating different people.
+	</p>
+
+	<div class="mono-block">MV3#&lt;idNumber&gt;#…#&lt;photoHash&gt;#&lt;faceCode32hex&gt;#&lt;signature&gt;</div>
+
+	<ul>
+		<li><strong>faceCode</strong> &mdash; 128 bits (32 hex characters). The reference implementation detects the face and computes a 128-dimensional embedding with the open-source face-api models (TensorFlow.js), subtracts a population mean, and projects the result onto 128 fixed random hyperplanes; each bit records which side of a hyperplane the face falls on.</li>
+		<li><strong>Inside the signature</strong> &mdash; editing the code breaks verification exactly as altering a name would. The version prefix is signed too, so an MV3 card cannot be downgraded to MV2 by deleting the code.</li>
+		<li><strong>QR budget</strong> &mdash; the 32 extra characters take the payload from about 270 to about 290 bytes, which moves the symbol from version&nbsp;10 to version&nbsp;11 (61 modules, 0.41&nbsp;mm each in the same 25&nbsp;mm square). Tested to decode from an angled, noisy photograph of the card.</li>
+		<li><strong>Measured accuracy</strong> &mdash; see below. A learned projection such as PCA-ITQ, which published work reports at around 99% true-accept at 1% false-accept with 128 bits,<sup><a href="#r9">9</a></sup> is a straightforward upgrade once trained on enrolment photographs.</li>
+	</ul>
+
+	<h3>Measured accuracy</h3>
+
+	<p>
+		The population mean and threshold were calibrated on Labeled Faces in the
+		Wild<sup><a href="#r11">11</a></sup>: 500 faces for the mean, then 300 same-person
+		pairs and 44,850 different-person pairs held out for evaluation.
+	</p>
+
+	<table>
+		<thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+		<tbody>
+			<tr><td>Default threshold</td><td>34 of 128 bits, at most 0.1% of different-person pairs accepted</td></tr>
+			<tr><td>Same-person pairs accepted at 34 bits</td><td>56.7%</td></tr>
+			<tr><td>Same-person pairs accepted at 40 bits (0.8% false accept)</td><td>75.7%</td></tr>
+			<tr><td>Equal error rate</td><td>6.7% (13.1% without centring)</td></tr>
+			<tr><td>Same portrait after print-like degradation</td><td>0&ndash;9 bits</td></tr>
+			<tr><td>Printed card photographed at an angle</td><td>12&ndash;17 bits</td></tr>
+			<tr><td>Different person, sample portrait 1</td><td>50&ndash;56 bits</td></tr>
+			<tr><td>Different people, sample portraits 3 and 4</td><td>32&ndash;38 bits</td></tr>
+		</tbody>
+	</table>
+	<p class="caption">LFW same-person pairs are often years apart, so they are harder than matching an ID photograph at a counter. The unbinarised embedding reaches 83% at 0.1% false accept, so most of the gap is the model rather than the 128-bit code.</p>
+
+	<div class="callout callout--limit">
+		<span class="callout__label">What the samples show</span>
+		<p>
+			Three of the four Immigration example portraits &mdash; different women of similar
+			age photographed to the same standard &mdash; sit close to the threshold, and one
+			pair falls inside it. The model&rsquo;s raw embeddings agree, so this is a property
+			of the off-the-shelf model, not the code: it separates these faces far less well
+			than the public benchmark faces. Before the Enhanced tier is relied on it must be
+			measured on Maldivian enrolment photographs, and very likely moved to a stronger
+			embedding model. The schema pins the model to the MV3 prefix, so a better model
+			ships as a new version without ambiguity.
+		</p>
+	</div>
+
+	<h3>Issuance modes</h3>
+
+	<p>
+		The personalisation workflow gains two modes, selectable per cardholder or per
+		product line:
+	</p>
+
+	<ul>
+		<li><strong>Standard issuance (MV2)</strong> &mdash; today&rsquo;s path: normalise the approved portrait, compute the perceptual hash, sign, print. No face model required at the workstation.</li>
+		<li><strong>Enhanced issuance (MV3)</strong> &mdash; the same portrait pipeline, plus a face-detection and embedding step on the approved photograph. The code is computed from the same normalised greyscale portrait that is printed and hashed, so the signed template describes the photograph on the card. Signing is blocked until a face is found. The model runs once at issuance, not on the card.</li>
+	</ul>
+
+	<p>
+		Enhanced cards are optional. A citizen with a standard card is not second-class:
+		the verifier accepts them at Standard assurance. Enhanced cards additionally offer
+		bearer matching where the checkpoint chooses to require it.
+	</p>
+
+	<h3>Verification flow</h3>
+
+	<ol>
+		<li>Decode the QR and read the version prefix. MV2 cards follow the current verifier; MV3 cards continue after step 4.</li>
+		<li>Verify the BLS12-381 signature against the pinned public key.</li>
+		<li>Check expiry and recover the printed portrait through the card geometry; compare its perceptual hash with the signed value.</li>
+		<li><strong>MV3 only:</strong> lazy-load the face models into the verifier (about 7&nbsp;MB, fetched once and cached). Capture the person presenting the card with the front camera, compute the same code on the device, and compare its Hamming distance with the signed <code>faceCode</code>.</li>
+		<li>Report an assurance outcome: <em>Card verified</em> (Standard), <em>Card and holder verified</em> (Enhanced), or the specific step that failed &mdash; including <em>Person does not match the card</em>.</li>
+	</ol>
+
+	<p>
+		Models are not loaded for MV2 scans, keeping the default verifier lightweight. A
+		checkpoint that never needs bearer matching never downloads them. After the first
+		load, computing a face code takes tens of milliseconds in a browser with WebGL. The
+		face image is never uploaded; the comparison happens on the verifying device.
+	</p>
+
+	<h3>What MV3 closes &mdash; and what it opens</h3>
+
+	<div class="callout">
+		<span class="callout__label">Closes</span>
+		<p>
+			The borrowed-card problem: a genuine, untampered card presented by someone who
+			resembles the photograph. The photo hash cannot help, because the photograph is
+			genuine. MV3 compares against the person in front of the camera, turning a
+			document check into an identity check at Enhanced assurance.
+		</p>
+	</div>
+
+	<div class="callout callout--limit">
+		<span class="callout__label">Opens</span>
+		<ul>
+			<li><strong>Privacy.</strong> A face template is a linkable biometric identifier in a way a 64-bit photo hash is not. Enhanced tier adoption needs a privacy impact assessment and clear retention rules before rollout.</li>
+			<li><strong>Policy.</strong> Which services may require Enhanced verification, and whether citizens can opt out of the face tier while keeping a standard card, are governance questions rather than engineering ones.</li>
+			<li><strong>Model governance.</strong> The embedding model, population mean and projection seed are pinned to the MV3 schema; changing any of them changes every code issued, so an upgrade means a new version prefix, not a silent swap.</li>
+			<li><strong>No liveness detection.</strong> A good photograph of the cardholder held up to the camera would pass. The Enhanced check is designed for staffed counters where the operator sees a real person; unattended use would need presentation-attack detection.</li>
+			<li><strong>Population fit.</strong> The face model was not trained on Maldivian faces, and the threshold was calibrated on a public dataset of mostly Western faces. Error rates must be measured on the real population during the pilot.</li>
+		</ul>
+	</div>
+
+	<h3>Implementation status</h3>
+
+	<p>
+		Both tiers are implemented and demonstrable today. The issuer offers Standard and
+		Enhanced; the verifier recognises MV3 cards, lazy-loads the models, and checks the
+		person presenting the card from a live camera or an uploaded photo; a ready-made
+		Enhanced sample card is included; and the face code has its own test suite plus an
+		end-to-end browser test. What phase&nbsp;5 of the roadmap now covers is measurement
+		on Maldivian enrolment photographs, recalibration of the population mean and
+		threshold on that set, a privacy impact assessment, and the issuance policy.
 	</p>
 
 	<h2 id="roadmap">Deployment roadmap</h2>
@@ -528,10 +736,10 @@
 			<tr><td>2. Issuance integration</td><td>HSM procurement and installation, integration with the personalisation system at the print centres, operator training</td><td>3&ndash;4 months</td></tr>
 			<tr><td>3. Verifier release</td><td>Public verifier at a government domain, installable offline app, published public key, guidance for banks, police, immigration and health services</td><td>Parallel with phase 2</td></tr>
 			<tr><td>4. Rollout</td><td>New and renewed cards carry the QR; both populations coexist; adoption tracked by issuance volume</td><td>Continuous</td></tr>
-			<tr><td>5. Optional face tier</td><td>Model selection and projection training, privacy impact assessment, tiered issuance</td><td>Subsequent, subject to policy</td></tr>
+			<tr><td>5. Enhanced face tier (MV3)</td><td>Accuracy measurement on Maldivian enrolment photographs, recalibration of the face code, optional learned projection, liveness assessment for unattended use, privacy impact assessment, tiered issuance policy</td><td>Subsequent, subject to policy</td></tr>
 		</tbody>
 	</table>
-	<p class="caption">Durations are indicative and assume the reference implementation is used as the starting point rather than a fresh build.</p>
+	<p class="caption">The Enhanced tier&rsquo;s issuer and verifier paths already exist in the reference implementation; phase 5 is validation and policy. Durations are indicative and assume the reference implementation is used as the starting point rather than a fresh build.</p>
 
 	<h3>Coexistence with Smart ID</h3>
 
@@ -578,7 +786,7 @@
 		<li><strong>No new database.</strong> Verification is offline and stateless. There is no central log of who checked whose card, and therefore no surveillance surface to govern.</li>
 		<li><strong>The photo hash is not a photograph.</strong> Sixty-four bits cannot reconstruct an image; it can only be compared against a candidate.</li>
 		<li><strong>Machine readability is the real question.</strong> The address is printed on the card today, but a QR makes it bulk-collectable by anyone with a camera. Options include omitting the address from the payload at some cost to verification coverage, or accepting it as equivalent to what is already visible. This is a policy decision, not a technical one.</li>
-		<li><strong>The face tier would change this analysis.</strong> A biometric template is a linkable identifier and would warrant a full privacy impact assessment under ISO/IEC 24745 principles before adoption.</li>
+		<li><strong>The face tier changes this analysis.</strong> A biometric template is a linkable identifier. The Enhanced tier keeps it only on the card and compares on the verifying device, with no upload and no database, but it still warrants a full privacy impact assessment under ISO/IEC 24745 principles before adoption.</li>
 	</ul>
 
 	<h2 id="risks">Risks</h2>
@@ -632,9 +840,10 @@
 \________________________ signed message ________________________/</div>
 
 		<ul>
-			<li><strong>Version prefix</strong> &mdash; identifies the field layout. Readers refuse versions they do not know rather than guessing at positional fields.</li>
+			<li><strong>Version prefix</strong> &mdash; identifies the field layout. Readers refuse versions they do not know rather than guessing at positional fields. <strong>MV2</strong> (Standard) and <strong>MV3</strong> (Enhanced) are both implemented.</li>
 			<li><strong>Six printed fields</strong> &mdash; ID number, name, sex, date of birth, expiry date and permanent address.</li>
 			<li><strong>photoHash</strong> &mdash; 64-bit perceptual hash of the normalised portrait, 16 hexadecimal characters.</li>
+			<li><strong>faceCode</strong> <em>(MV3 only)</em> &mdash; 128-bit locality-sensitive face template, 32 hexadecimal characters, signed alongside the other fields.</li>
 			<li><strong>signature</strong> &mdash; BLS12-381 over everything preceding it, 96 bytes as 192 hexadecimal characters.</li>
 		</ul>
 
@@ -651,16 +860,20 @@
 		<table>
 			<thead><tr><th>Measurement</th><th>Result</th></tr></thead>
 			<tbody>
-				<tr><td>Signed payload</td><td>302 characters, compressing to 266 bytes</td></tr>
-				<tr><td>QR symbol</td><td>Version 10, 57 modules, 0.385 mm per module at 25 mm</td></tr>
+				<tr><td>Signed payload, Standard</td><td>302 characters, compressing to about 270 bytes</td></tr>
+				<tr><td>QR symbol, Standard</td><td>Version 10 (version 11 for longer names and addresses), 57 modules, 0.44 mm per module at 25 mm</td></tr>
+				<tr><td>Signed payload, Enhanced</td><td>335 characters, compressing to about 290 bytes</td></tr>
+				<tr><td>QR symbol, Enhanced</td><td>Version 11, 61 modules, 0.41 mm per module at 25 mm</td></tr>
+				<tr><td>Face code, after models load</td><td>About 40&ndash;50 ms per face in a desktop browser (WebGL)</td></tr>
 				<tr><td>Signature size</td><td>96 bytes (192 hex characters)</td></tr>
 				<tr><td>Public key size</td><td>48 bytes (96 hex characters)</td></tr>
 				<tr><td>Verification, total</td><td>102 ms median, desktop browser</td></tr>
 				<tr><td>Portrait distance, flat scan</td><td>0 of 64 bits</td></tr>
 				<tr><td>Portrait distance, angled photograph with noise</td><td>2 of 64 bits</td></tr>
 				<tr><td>Portrait distance, substituted face</td><td>22 of 64 bits</td></tr>
-				<tr><td>Browser pipeline test suite</td><td>34 of 34 checks passing</td></tr>
-				<tr><td>Payload and cryptography test suite</td><td>31 of 31 checks passing</td></tr>
+				<tr><td>Browser pipeline test suite</td><td>42 of 42 checks passing, including the Enhanced card end to end</td></tr>
+				<tr><td>Payload and cryptography test suite</td><td>41 of 41 checks passing, including MV3 and downgrade attempts</td></tr>
+				<tr><td>Face code test suite</td><td>19 of 19 checks passing</td></tr>
 			</tbody>
 		</table>
 
@@ -689,9 +902,13 @@
 					<img src="samples/card-expired.png?v=blue" alt="Expired sample card">
 					<figcaption>Expired &mdash; date check fails</figcaption>
 				</figure>
+				<figure>
+					<img src="samples/card-enhanced.png?v=mv3" alt="Enhanced sample card with signed face code">
+					<figcaption>Enhanced (MV3) &mdash; holder checked against the signed face code</figcaption>
+				</figure>
 			</div>
 			<figcaption>
-				The four sample cards used throughout this proposal and the live demo.
+				The five sample cards used throughout this proposal and the live demo.
 				Illustrative mockups with real sample portraits and synthetic cardholder data;
 				not official artefacts.
 			</figcaption>
@@ -710,6 +927,7 @@
 			<li id="r8">Department of National Registration. <a href="https://dnr.gov.mv/?lang=en">dnr.gov.mv</a></li>
 			<li id="r9">&ldquo;Bit Stability and Hash-Length Trade-Offs in Binary Face Templates&rdquo;, <em>IJACSA</em> 16(11), 2025. <a href="https://doi.org/10.14569/ijacsa.2025.0161192">doi.org/10.14569/ijacsa.2025.0161192</a></li>
 			<li id="r10">eFaas, National Digital Identity of the Maldives. <a href="https://efaas.egov.mv/">efaas.egov.mv</a></li>
+			<li id="r11">G. B. Huang, M. Ramesh, T. Berg, E. Learned-Miller, &ldquo;Labeled Faces in the Wild: A Database for Studying Face Recognition in Unconstrained Environments&rdquo;, University of Massachusetts, Amherst, Technical Report 07-49, 2007. <a href="https://vis-www.cs.umass.edu/lfw/">vis-www.cs.umass.edu/lfw</a></li>
 		</ol>
 
 	</div>
@@ -719,7 +937,7 @@
 			This document accompanies a working reference implementation. The
 			<a href="issuer.html">issuer</a> and <a href="scanner.html">verifier</a> are both
 			runnable in a browser, and the <a href="tests.html">test suite</a> exercises the
-			full pipeline including forged, tampered and expired cards. All cards and
+			full pipeline including forged, tampered, expired and Enhanced cards. All cards and
 			cardholder details shown are illustrative mockups with real sample portraits and
 			synthetic data; the
 			signing key used in the demonstration is public and is not suitable for any
