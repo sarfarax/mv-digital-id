@@ -356,6 +356,45 @@ js/lib/             vendored third-party code, see js/lib/README.md
 models/             face-api weights, loaded only for Enhanced cards
 tools/              Node scripts: tests, keypairs, sample generation, calibration
 samples/            portraits and ready-made cards
+infra/              CloudFormation for the hosted demo (S3 + CloudFront)
+scripts/deploy.sh   uploads the site and invalidates CloudFront
+```
+
+## Deploying to AWS
+
+The verifier opens the camera, which browsers only allow over HTTPS, so the
+demo is served from a private S3 bucket through CloudFront rather than an S3
+website endpoint. `infra/cloudformation.yml` creates the bucket, the
+distribution, security headers and an IAM role that GitHub Actions assumes
+through OIDC, so no AWS keys are stored in GitHub.
+
+```bash
+aws cloudformation deploy \
+  --stack-name mv-digital-id-demo \
+  --template-file infra/cloudformation.yml \
+  --capabilities CAPABILITY_IAM \
+  --region ap-south-1
+aws cloudformation describe-stacks --stack-name mv-digital-id-demo \
+  --region ap-south-1 --query "Stacks[0].Outputs" --output table
+```
+
+Pass `--parameter-overrides CreateGitHubOIDCProvider=false` if the account
+already has the GitHub OIDC provider. Then add these repository variables under
+*Settings → Secrets and variables → Actions → Variables*:
+
+| Variable | Value |
+|---|---|
+| `AWS_REGION` | the stack's region, e.g. `ap-south-1` |
+| `AWS_DEPLOY_ROLE_ARN` | `DeployRoleArn` output |
+| `S3_BUCKET` | `BucketName` output |
+| `CLOUDFRONT_DISTRIBUTION_ID` | `DistributionId` output |
+
+Every push to `main` then runs the Node tests and, if they pass,
+`scripts/deploy.sh`. The deploy job is skipped until the variables exist. To
+deploy by hand instead:
+
+```bash
+S3_BUCKET=... CLOUDFRONT_DISTRIBUTION_ID=... scripts/deploy.sh
 ```
 
 ## What this is not
