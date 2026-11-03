@@ -38,6 +38,11 @@
 			different face pasted over it. Enhanced cards add a third check: whether the person
 			presenting the card matches the face the authority signed.
 		</p>
+		<p class="note note--warn">
+			<strong>Demo verifier.</strong> It trusts a test signing key that is published with
+			this project, so anyone can make a card that passes here. A pass on this page is not
+			proof of anyone&rsquo;s identity.
+		</p>
 	</div>
 
 	<div class="verdict-dock" id="overallVerdict" aria-live="polite"></div>
@@ -304,6 +309,15 @@
 		</div>
 	</div>
 </main>
+
+<footer class="site-footer">
+	<p>
+		Unofficial demonstration, not affiliated with or endorsed by the Government of Maldives
+		or the Department of National Registration. Cards made here are specimens, not valid
+		identification, and the demo signing key is public, so anyone can create a card this
+		verifier accepts.
+	</p>
+</footer>
 
 <script src="js/lib/jsQR.js"></script>
 <script type="module" src="js/scanner.js"></script>

@@ -209,6 +209,17 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.85em; }
 	.layout-split { grid-template-columns: minmax(0, 1fr); }
 }
 
+.site-footer {
+	max-width: 1180px;
+	margin: 0 auto;
+	padding: 1.25rem max(1.25rem, env(safe-area-inset-right)) 2rem max(1.25rem, env(safe-area-inset-left));
+	border-top: 1px solid var(--line);
+	font-size: 0.8rem;
+	color: var(--ink-faint);
+}
+
+.site-footer p { margin: 0; max-width: 72ch; }
+
 /* ------------------------------------------------------------------ *
  * Panels
  * ------------------------------------------------------------------ */
@@ -726,6 +737,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .verdict__title { font-weight: 650; }
 .verdict__detail { font-size: 0.88rem; color: var(--ink-soft); }
+.verdict__demo { font-size: 0.78rem; font-weight: 600; color: var(--warn); margin-top: 0.3rem; }
 
 .verdict--pass { background: var(--ok-wash); border-color: #b9dcc4; }
 .verdict--pass .verdict__icon { background: var(--ok); color: #fff; }
@@ -1042,6 +1054,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 	body { background: #fff; }
 
 	.site-header,
+	.site-footer,
 	.page__intro,
 	.panel:not(.panel--print),
 	.no-print { display: none !important; }

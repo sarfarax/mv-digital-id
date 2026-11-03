@@ -331,6 +331,11 @@ function renderOverallVerdict() {
 		}
 	}
 
+	// The demo key is public, so a pass must never read as proof of identity.
+	const demoNote = kind === 'fail'
+		? ''
+		: '<div class="verdict__demo">Demo verifier: it trusts a public test key, so a pass is not proof of identity.</div>';
+
 	const icons = { pass: '✓', fail: '✕', warn: '!' };
 	dom.overallVerdict.innerHTML = `
 		<div class="verdict verdict--${kind}">
@@ -338,6 +343,7 @@ function renderOverallVerdict() {
 			<div>
 				<div class="verdict__title">${title}</div>
 				<div class="verdict__detail">${detail}</div>
+				${demoNote}
 			</div>
 		</div>`;
 }
