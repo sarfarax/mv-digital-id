@@ -373,9 +373,9 @@ aws cloudformation deploy \
   --stack-name mv-digital-id-demo \
   --template-file infra/cloudformation.yml \
   --capabilities CAPABILITY_IAM \
-  --region ap-south-1
+  --region us-east-1
 aws cloudformation describe-stacks --stack-name mv-digital-id-demo \
-  --region ap-south-1 --query "Stacks[0].Outputs" --output table
+  --region us-east-1 --query "Stacks[0].Outputs" --output table
 ```
 
 Pass `--parameter-overrides CreateGitHubOIDCProvider=false` if the account
@@ -384,7 +384,7 @@ already has the GitHub OIDC provider. Then add these repository variables under
 
 | Variable | Value |
 |---|---|
-| `AWS_REGION` | the stack's region, e.g. `ap-south-1` |
+| `AWS_REGION` | the stack's region, e.g. `us-east-1` |
 | `AWS_DEPLOY_ROLE_ARN` | `DeployRoleArn` output |
 | `S3_BUCKET` | `BucketName` output |
 | `CLOUDFRONT_DISTRIBUTION_ID` | `DistributionId` output |
