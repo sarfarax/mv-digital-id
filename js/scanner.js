@@ -333,19 +333,23 @@ function renderOverallVerdict() {
 
 	// The demo key is public, so a pass must never read as proof of identity.
 	const demoNote = kind === 'fail'
-		? ''
-		: '<div class="verdict__demo">Demo verifier: it trusts a public test key, so a pass is not proof of identity.</div>';
+		? null
+		: 'Demo verifier: it trusts a public test key, so a pass is not proof of identity.';
 
+	// Built with textContent: detail can quote text read from the scanned QR.
 	const icons = { pass: '✓', fail: '✕', warn: '!' };
-	dom.overallVerdict.innerHTML = `
-		<div class="verdict verdict--${kind}">
-			<div class="verdict__icon">${icons[kind]}</div>
-			<div>
-				<div class="verdict__title">${title}</div>
-				<div class="verdict__detail">${detail}</div>
-				${demoNote}
-			</div>
-		</div>`;
+	const el = (className, text) => {
+		const div = document.createElement('div');
+		div.className = className;
+		if (text != null) div.textContent = text;
+		return div;
+	};
+	const body = el('');
+	body.append(el('verdict__title', title), el('verdict__detail', detail));
+	if (demoNote) body.append(el('verdict__demo', demoNote));
+	const verdict = el(`verdict verdict--${kind}`);
+	verdict.append(el('verdict__icon', icons[kind]), body);
+	dom.overallVerdict.replaceChildren(verdict);
 }
 
 function renderIdentity(result) {

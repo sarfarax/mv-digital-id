@@ -571,15 +571,19 @@ dom.generate.addEventListener('click', async () => {
  * ------------------------------------------------------------------ */
 
 function renderVerdict(target, kind, title, detail) {
+	// Built with textContent: detail can quote text from the pasted barcode data.
 	const icons = { pass: '✓', fail: '✕', warn: '!' };
-	target.innerHTML = `
-		<div class="verdict verdict--${kind}">
-			<div class="verdict__icon">${icons[kind] ?? '?'}</div>
-			<div>
-				<div class="verdict__title">${title}</div>
-				<div class="verdict__detail">${detail}</div>
-			</div>
-		</div>`;
+	const el = (className, text) => {
+		const div = document.createElement('div');
+		div.className = className;
+		if (text != null) div.textContent = text;
+		return div;
+	};
+	const body = el('');
+	body.append(el('verdict__title', title), el('verdict__detail', detail));
+	const verdict = el(`verdict verdict--${kind}`);
+	verdict.append(el('verdict__icon', icons[kind] ?? '?'), body);
+	target.replaceChildren(verdict);
 }
 
 dom.selfVerify.addEventListener('click', async () => {
