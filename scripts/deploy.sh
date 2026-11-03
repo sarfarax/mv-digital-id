@@ -24,15 +24,18 @@ aws s3 sync . "s3://${S3_BUCKET}" --delete --no-progress \
 	--include "js/*" \
 	--include "LICENSE" \
 	--exclude "js/lib/README.md" \
+	--exclude "*.DS_Store" \
 	--cache-control "public, max-age=300"
 
 # Face models: about 7 MB, vendored and rarely touched, so cached for a month.
 aws s3 sync models "s3://${S3_BUCKET}/models" --delete --no-progress \
+	--exclude "*.DS_Store" \
 	--cache-control "public, max-age=2592000"
 
 # Sample cards and portraits. The .rgba fixtures are only read by tools/.
 aws s3 sync samples "s3://${S3_BUCKET}/samples" --delete --no-progress \
 	--exclude "*.rgba" \
+	--exclude "*.DS_Store" \
 	--cache-control "public, max-age=86400"
 
 aws cloudfront create-invalidation \
