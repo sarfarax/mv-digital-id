@@ -5,6 +5,7 @@ import {
 	canonicalPortrait,
 	centreCrop,
 	clampCrop,
+	fitCardToContainer,
 	CARD,
 	PORTRAIT_ASPECT
 } from './card.js';
@@ -90,6 +91,11 @@ const dom = {
 	boundQrVersion: $('boundQrVersion'),
 	boundEncoding: $('boundEncoding')
 };
+
+fitCardToContainer(dom.idCard.parentElement);
+
+// Matches the breakpoint where .layout-split collapses to one column.
+const singleColumn = window.matchMedia('(max-width: 900px)');
 
 const state = {
 	image: null,       // the uploaded HTMLImageElement
@@ -230,6 +236,7 @@ function loadPhoto(file) {
 			state.image = image;
 			state.crop = centreCrop(image.naturalWidth, image.naturalHeight);
 			dom.photoDropLabel.textContent = file.name;
+			dom.photoDropLabel.classList.remove('upload-drop__hint');
 			dom.cropperWrap.classList.remove('hidden');
 			// Express the starting crop as a zoom percentage of the widest possible frame.
 			const maxCrop = centreCrop(image.naturalWidth, image.naturalHeight);
@@ -548,6 +555,9 @@ dom.generate.addEventListener('click', async () => {
 		dom.selfVerifyResult.innerHTML = '';
 
 		setStatus(dom.generateStatus, 'Card signed. Print it, or scan it with the verifier.', 'ok');
+
+		// In one column the card sits below the whole form, out of sight.
+		if (singleColumn.matches) dom.idCard.closest('.panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 	} catch (error) {
 		console.error(error);
 		setStatus(dom.generateStatus, `Signing failed: ${error.message}`, 'error');

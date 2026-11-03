@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
 <title>Verify a card &middot; Maldives Digital ID</title>
 <meta name="description" content="Scan a Maldivian digital identity card, check its BLS signature, and confirm the printed portrait matches the perceptual hash inside the QR code.">
 <link rel="stylesheet" href="css/style.css">
@@ -39,7 +40,7 @@
 		</p>
 	</div>
 
-	<div id="overallVerdict"></div>
+	<div class="verdict-dock" id="overallVerdict" aria-live="polite"></div>
 
 	<div class="layout-split">
 
@@ -80,7 +81,7 @@
 					<div class="upload-drop" id="cardDrop">
 						<input type="file" id="cardInput" accept="image/*" class="hidden">
 						<button type="button" class="btn-ghost btn-small" id="cardPick">Choose a card image</button>
-						<span id="cardDropLabel">or drop a photo of the whole card here</span>
+						<span class="upload-drop__hint" id="cardDropLabel">or drop a photo of the whole card here</span>
 					</div>
 					<figure style="margin: 0;" class="hidden" id="cardImageWrap">
 						<canvas id="cardImagePreview" style="width: 100%; border-radius: var(--radius); border: 1px solid var(--line);"></canvas>
@@ -168,7 +169,7 @@
 					<div class="upload-drop" id="photoCardDrop">
 						<input type="file" id="photoCardInput" accept="image/*" class="hidden">
 						<button type="button" class="btn-ghost btn-small" id="photoCardPick">Choose a card image</button>
-						<span>or drop one here</span>
+						<span class="upload-drop__hint">or drop one here</span>
 					</div>
 				</div>
 
@@ -180,7 +181,7 @@
 					<div class="upload-drop" id="photoDirectDrop">
 						<input type="file" id="photoDirectInput" accept="image/*" class="hidden">
 						<button type="button" class="btn-ghost btn-small" id="photoDirectPick">Choose a portrait</button>
-						<span>or drop one here</span>
+						<span class="upload-drop__hint">or drop one here</span>
 					</div>
 				</div>
 
@@ -251,7 +252,7 @@
 						<div class="upload-drop" id="bearerDrop">
 							<input type="file" id="bearerInput" accept="image/*" class="hidden">
 							<button type="button" class="btn-ghost btn-small" id="bearerPick">Choose a photo of the person</button>
-							<span>or drop one here</span>
+							<span class="upload-drop__hint">or drop one here</span>
 						</div>
 						<div class="actions">
 							<button type="button" class="btn-ghost btn-small" id="bearerUseCard" disabled>Use the portrait read from the card</button>

@@ -2,13 +2,43 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
 <title>Making the National Identity Card Verifiable · Presentation</title>
 <meta name="description" content="Stakeholder presentation: a cryptographically signed QR code that makes the Maldivian national identity card verifiable offline on any phone.">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/deck.css">
+<script>
+	// Chosen before first paint so phones never flash the scaled-down stage. Keep in step with READER_QUERY in deck.js.
+	if (window.matchMedia('(max-width: 760px), (max-height: 500px)').matches) document.documentElement.classList.add('deck-reader');
+</script>
 </head>
 <body class="deck">
+
+<header class="site-header deck-reader-only">
+	<div class="site-header__inner">
+		<a class="brand" href="index.html">
+			<span class="brand__mark" aria-hidden="true">MV</span>
+			<span>Maldives Digital ID</span>
+		</a>
+		<nav class="site-nav">
+			<a href="index.html">Overview</a>
+			<a href="issuer.html">Issue</a>
+			<a href="scanner.html">Verify</a>
+			<a href="tests.html">Tests</a>
+			<a href="proposal.html">Proposal</a>
+			<a href="deck.html" aria-current="page">Deck</a>
+		</nav>
+	</div>
+</header>
+
+<div class="deck-toolbar deck-reader-only">
+	<div>
+		<div class="deck-toolbar__title">Presentation</div>
+		<div class="deck-toolbar__meta" id="deckCount"></div>
+	</div>
+	<button type="button" class="btn-primary" id="presentDeck">Present slides</button>
+</div>
 
 <div class="stage" id="stage">
 
@@ -598,6 +628,15 @@
 </div>
 
 <div class="deck-help">&larr; &rarr; navigate &middot; F fullscreen &middot; P print</div>
+
+<div class="deck-controls" aria-label="Slide controls">
+	<button type="button" id="deckPrev" aria-label="Previous slide">&lsaquo;</button>
+	<span class="deck-controls__pos" id="deckPos"></span>
+	<button type="button" id="deckNext" aria-label="Next slide">&rsaquo;</button>
+	<button type="button" class="deck-controls__exit" id="deckExit">Read as page</button>
+</div>
+
+<div class="deck-rotate-hint" aria-hidden="true">Turn your phone sideways for larger slides</div>
 
 <script type="module" src="js/deck.js"></script>
 

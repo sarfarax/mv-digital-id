@@ -54,6 +54,28 @@ export function applyCardGeometry(root = document.documentElement) {
 	for (const [name, value] of Object.entries(variables)) root.style.setProperty(name, mm(value));
 }
 
+/**
+ * Scale an on-screen card to the width of its container, never beyond
+ * `maxScale` times actual size. Print styles pin the scale back to 1 so the
+ * printed card stays exactly ID-1.
+ */
+export function fitCardToContainer(stage, maxScale = 2) {
+	const container = stage.parentElement;
+	const card = stage.firstElementChild;
+
+	const fit = () => {
+		const style = getComputedStyle(container);
+		const available = container.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+		// offsetWidth ignores the transform, so this is always the unscaled card.
+		const cardWidth = card.offsetWidth;
+		if (available <= 0 || !cardWidth) return;
+		stage.style.setProperty('--card-scale', Math.min(maxScale, available / cardWidth).toFixed(4));
+	};
+
+	new ResizeObserver(fit).observe(container);
+	fit();
+}
+
 // The canonical portrait raster. 3:4, matching PORTRAIT_RECT's aspect ratio.
 export const PORTRAIT_PIXELS = { width: 300, height: 400 };
 

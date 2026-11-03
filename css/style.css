@@ -113,10 +113,86 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.85em; }
 .site-nav a:hover { background: var(--surface-sunken); color: var(--ink); }
 .site-nav a[aria-current="page"] { background: var(--accent-wash); color: var(--accent-strong); }
 
+/* Icons for the phone tab bar, keyed off the link target so every page's markup stays identical. */
+.site-nav a[href="index.html"] { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z'/%3E%3C/svg%3E"); }
+.site-nav a[href="issuer.html"] { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='2.5' y='5' width='19' height='14' rx='2'/%3E%3Ccircle cx='8.5' cy='11' r='2'/%3E%3Cpath d='M5.5 16c.6-1.4 1.7-2.1 3-2.1s2.4.7 3 2.1M14.5 10h4M14.5 13.5h3'/%3E%3C/svg%3E"); }
+.site-nav a[href="scanner.html"] { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3'/%3E%3Cpath d='m8.5 12 2.5 2.5 4.5-5'/%3E%3C/svg%3E"); }
+.site-nav a[href="tests.html"] { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3'/%3E%3C/svg%3E"); }
+.site-nav a[href="proposal.html"] { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z'/%3E%3Cpath d='M14 3v5h5M9 13h6M9 17h6'/%3E%3C/svg%3E"); }
+.site-nav a[href="deck.html"] { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='12' rx='1.5'/%3E%3Cpath d='M12 16v4M8 20h8M10 8.5v4l3.5-2z'/%3E%3C/svg%3E"); }
+
+/*
+ * Phones: the header shrinks to the brand and the nav becomes a bottom tab
+ * bar, so the four things people come here to do stay one thumb-tap away.
+ * Tests remain reachable from the overview.
+ */
+@media (max-width: 720px) {
+	.site-header { position: static; }
+
+	.site-header__inner {
+		padding: 0.7rem max(1rem, env(safe-area-inset-right)) 0.7rem max(1rem, env(safe-area-inset-left));
+	}
+
+	.site-nav {
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		z-index: 30;
+		margin: 0;
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(0, 1fr);
+		gap: 0.15rem;
+		padding: 0.3rem max(0.4rem, env(safe-area-inset-right)) calc(0.3rem + env(safe-area-inset-bottom)) max(0.4rem, env(safe-area-inset-left));
+		background: rgb(255 255 255 / 94%);
+		-webkit-backdrop-filter: saturate(1.6) blur(12px);
+		backdrop-filter: saturate(1.6) blur(12px);
+		border-top: 1px solid var(--line);
+		box-shadow: 0 -4px 18px rgb(16 22 29 / 6%);
+	}
+
+	.site-nav a {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.15rem;
+		padding: 0.35rem 0.1rem 0.3rem;
+		border-radius: var(--radius);
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.01em;
+		white-space: nowrap;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.site-nav a::before {
+		content: "";
+		width: 1.45rem;
+		height: 1.45rem;
+		background: currentColor;
+		-webkit-mask: var(--icon) center / contain no-repeat;
+		mask: var(--icon) center / contain no-repeat;
+	}
+
+	.site-nav a[href="tests.html"] { display: none; }
+	.site-nav a:hover { background: none; }
+	.site-nav a[aria-current="page"] { background: none; color: var(--accent); }
+
+	body:has(.site-nav) { padding-bottom: calc(4.1rem + env(safe-area-inset-bottom)); }
+}
+
 .page {
 	max-width: 1180px;
 	margin: 0 auto;
 	padding: 1.5rem 1.25rem 4rem;
+}
+
+@media (max-width: 720px) {
+	.page { padding: 1.1rem max(1rem, env(safe-area-inset-right)) 2rem max(1rem, env(safe-area-inset-left)); }
+	h1 { font-size: 1.45rem; }
+	.page__intro { margin-bottom: 1.1rem; }
+	.page__intro p { font-size: 0.92rem; }
 }
 
 .page__intro { max-width: 62ch; margin-bottom: 1.5rem; }
@@ -131,12 +207,6 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.85em; }
 
 @media (max-width: 900px) {
 	.layout-split { grid-template-columns: minmax(0, 1fr); }
-	/* Fit the ID-1 face in the viewport so type reads at card-relative size. */
-	:root { --card-scale: 1.15; }
-}
-
-@media (max-width: 420px) {
-	:root { --card-scale: calc((100vw - 2rem) / 85.6mm); }
 }
 
 /* ------------------------------------------------------------------ *
@@ -184,6 +254,10 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.85em; }
 
 .panel--muted { background: var(--surface-sunken); box-shadow: none; }
 
+@media (max-width: 720px) {
+	.panel { padding: 1rem 1rem 1.15rem; margin-bottom: 1rem; border-radius: 14px; }
+}
+
 /* ------------------------------------------------------------------ *
  * Forms
  * ------------------------------------------------------------------ */
@@ -212,7 +286,7 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.85em; }
 
 .field input,
 .field select,
-.field textarea {
+textarea {
 	font: inherit;
 	color: var(--ink);
 	padding: 0.5rem 0.65rem;
@@ -225,14 +299,28 @@ code, kbd, samp { font-family: var(--mono); font-size: 0.85em; }
 
 .field input:focus,
 .field select:focus,
-.field textarea:focus,
+textarea:focus,
 button:focus-visible {
 	outline: 2px solid var(--accent);
 	outline-offset: 1px;
 	border-color: var(--accent);
 }
 
-.field textarea { resize: vertical; min-height: 4.5rem; font-family: var(--mono); font-size: 0.8rem; }
+textarea { resize: vertical; min-height: 4.5rem; font-family: var(--mono); font-size: 0.8rem; }
+
+@media (max-width: 720px) {
+	/* Below 16px iOS Safari zooms the page on focus and never zooms back. */
+	.field input,
+	.field select,
+	textarea { font-size: 16px; }
+
+	.field input,
+	.field select { min-height: 2.75rem; }
+
+	/* iOS renders an empty date input collapsed and centred. */
+	.field input[type="date"] { -webkit-appearance: none; appearance: none; text-align: left; }
+	.field input::-webkit-date-and-time-value { text-align: left; }
+}
 
 .field__error {
 	color: var(--danger);
@@ -305,6 +393,17 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-danger:hover:not(:disabled) { background: #f8d7d3; }
 
 .btn-small { padding: 0.3rem 0.65rem; font-size: 0.85rem; }
+
+@media (pointer: coarse) {
+	button { min-height: 2.75rem; justify-content: center; }
+	.btn-small { min-height: 2.4rem; }
+	.tabs button { min-height: 2.6rem; }
+}
+
+@media (max-width: 720px) {
+	/* Primary actions span the panel so they are easy to hit one-handed. */
+	.actions > .btn-primary { flex: 1 1 12rem; }
+}
 
 /* ------------------------------------------------------------------ *
  * The identity card
@@ -640,6 +739,37 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .verdict--warn .verdict__icon { background: var(--warn); color: #fff; }
 .verdict--warn .verdict__title { color: var(--warn); }
 
+/*
+ * On phones the verifier's steps stack into one long column, so the overall
+ * verdict docks to the top of the screen and stays visible from every step.
+ * The detail is clamped to keep the camera in view; tapping expands it.
+ */
+@media (max-width: 720px) {
+	.verdict-dock:not(:empty) {
+		position: sticky;
+		top: 0;
+		z-index: 15;
+		margin: 0 -0.5rem 0.75rem;
+		padding: calc(0.4rem + env(safe-area-inset-top)) 0.5rem 0.6rem;
+		background: linear-gradient(var(--page) 75%, rgb(238 241 245 / 0%));
+	}
+
+	.verdict-dock .verdict {
+		margin: 0;
+		padding: 0.65rem 0.8rem;
+		box-shadow: var(--shadow);
+		cursor: pointer;
+		-webkit-tap-highlight-color: transparent;
+	}
+
+	.verdict-dock:not(.is-expanded) .verdict__detail {
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+}
+
 .status-line { font-size: 0.88rem; color: var(--ink-soft); min-height: 1.3rem; }
 .status-line--error { color: var(--danger); }
 .status-line--ok { color: var(--ok); }
@@ -772,6 +902,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .upload-drop.is-dragging { border-color: var(--accent); background: var(--accent-wash); }
 
+/* Touch devices cannot drag files in; the button alone opens the picker or camera. */
+@media (pointer: coarse) {
+	.upload-drop__hint { display: none; }
+}
+
 /* Crop picker */
 
 .cropper {
@@ -839,6 +974,13 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .hero { padding: 2rem 0 1.5rem; max-width: 68ch; }
 .hero h1 { font-size: 2.1rem; margin-bottom: 0.6rem; }
 .hero p { font-size: 1.05rem; color: var(--ink-soft); }
+
+@media (max-width: 720px) {
+	.hero { padding: 0.75rem 0 1.1rem; }
+	.hero h1 { font-size: 1.7rem; }
+	.hero p { font-size: 0.98rem; }
+	.tile-grid { gap: 0.75rem; }
+}
 
 .tile-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
 
@@ -918,6 +1060,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 	}
 
 	.card-stage {
+		--card-scale: 1 !important;
 		break-inside: avoid;
 		margin: 10mm;
 	}

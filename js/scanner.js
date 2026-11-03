@@ -251,6 +251,9 @@ function bearerResult() {
 	return { distance, ok: distance <= Number(dom.faceThreshold.value), source: state.bearerSource };
 }
 
+// On phones the docked verdict clamps its detail; a tap shows all of it.
+dom.overallVerdict.addEventListener('click', () => dom.overallVerdict.classList.toggle('is-expanded'));
+
 function renderOverallVerdict() {
 	const signature = state.verification;
 	const hasSignature = Boolean(signature);
@@ -879,6 +882,7 @@ async function scanCardImage(file, { previewInto } = {}) {
 
 wireDropZone(dom.cardDrop, dom.cardInput, file => {
 	dom.cardDropLabel.textContent = file.name;
+	dom.cardDropLabel.classList.remove('upload-drop__hint');
 	scanCardImage(file, { previewInto: dom.cardImagePreview });
 });
 dom.cardPick.addEventListener('click', () => dom.cardInput.click());

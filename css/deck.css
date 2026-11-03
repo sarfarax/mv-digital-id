@@ -26,10 +26,21 @@ body.deck {
 	place-items: center;
 }
 
+/* The site nav's tab-bar clearance only applies when the page scrolls. */
+html:not(.deck-reader) body.deck { padding-bottom: 0; }
+
+/*
+ * Anchored on the viewport centre rather than grid-centred: a grid item wider
+ * than the viewport is pushed to one side, and the scaled slide then lands
+ * off screen on anything narrower than the stage.
+ */
 .stage {
 	width: var(--stage-w);
 	height: var(--stage-h);
-	position: relative;
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	margin: calc(var(--stage-h) / -2) 0 0 calc(var(--stage-w) / -2);
 	transform-origin: center center;
 	background: var(--surface);
 	overflow: hidden;
@@ -329,16 +340,260 @@ body.deck {
 /* Speaker notes never reach the projector; they are read from the DOM. */
 .notes { display: none; }
 
+/* ------------------------------ Touch controls (slide mode) ------------------------------ */
+
+.deck-controls,
+.deck-rotate-hint,
+html:not(.deck-reader) .deck-reader-only { display: none; }
+
+.deck-controls {
+	position: fixed;
+	left: 50%;
+	bottom: calc(10px + env(safe-area-inset-bottom));
+	transform: translateX(-50%);
+	z-index: 10;
+	align-items: center;
+	gap: 4px;
+	padding: 4px;
+	border-radius: 999px;
+	background: rgb(11 20 24 / 72%);
+	-webkit-backdrop-filter: blur(8px);
+	backdrop-filter: blur(8px);
+	font-family: var(--sans);
+}
+
+.deck-controls button {
+	min-height: 40px;
+	min-width: 40px;
+	padding: 0 12px;
+	border-radius: 999px;
+	background: transparent;
+	color: #fff;
+	font-size: 22px;
+	line-height: 1;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.deck-controls button:hover:not(:disabled) { background: rgb(255 255 255 / 12%); }
+.deck-controls .deck-controls__exit { font-size: 13px; font-weight: 600; border: 1px solid rgb(255 255 255 / 30%); margin-left: 4px; }
+
+.deck-controls__pos {
+	min-width: 4.2em;
+	text-align: center;
+	font-size: 13px;
+	color: rgb(255 255 255 / 80%);
+	font-variant-numeric: tabular-nums;
+}
+
+.deck-rotate-hint {
+	position: fixed;
+	top: calc(14px + env(safe-area-inset-top));
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 6px 14px;
+	border-radius: 999px;
+	background: rgb(255 255 255 / 12%);
+	color: rgb(255 255 255 / 80%);
+	font-family: var(--sans);
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+@media screen and (hover: none) {
+	html:not(.deck-reader) .deck-controls { display: flex; }
+	.deck-help { display: none; }
+}
+
+@media screen and (orientation: portrait) and (max-width: 760px) {
+	html:not(.deck-reader) .deck-rotate-hint { display: block; }
+}
+
+/* ------------------------------ Reader mode (phones) ------------------------------ */
+
+/*
+ * The same slides, reflowed as a scrolling page of cards. Slides carry inline
+ * font sizes tuned for the 1280px stage, hence the !important overrides.
+ */
+@media screen {
+	.deck-reader,
+	.deck-reader body {
+		height: auto;
+		overflow: visible;
+	}
+
+	.deck-reader body.deck {
+		display: block;
+		place-items: normal;
+		background: var(--page);
+	}
+
+	.deck-reader .deck-help,
+	.deck-reader .progress { display: none; }
+
+	/* Sticky so "Present slides" is reachable without scrolling back to slide one. */
+	.deck-toolbar {
+		position: sticky;
+		top: 0;
+		z-index: 20;
+		max-width: 46rem;
+		margin: 0 auto;
+		padding: calc(0.6rem + env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) 0.6rem max(1rem, env(safe-area-inset-left));
+		background: rgb(238 241 245 / 92%);
+		-webkit-backdrop-filter: blur(10px);
+		backdrop-filter: blur(10px);
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.deck-toolbar__title { font-weight: 650; font-size: 1.05rem; }
+	.deck-toolbar__meta { font-size: 0.8rem; color: var(--ink-faint); }
+	.deck-toolbar .btn-primary { flex: none; }
+
+	.deck-reader .stage {
+		position: relative;
+		left: auto;
+		top: auto;
+		width: auto;
+		height: auto;
+		max-width: 46rem;
+		margin: 0 auto;
+		padding: 0.75rem max(1rem, env(safe-area-inset-right)) 1.5rem max(1rem, env(safe-area-inset-left));
+		transform: none;
+		background: none;
+		box-shadow: none;
+		overflow: visible;
+	}
+
+	.deck-reader .slide {
+		position: relative;
+		inset: auto;
+		display: flex;
+		padding: 1.4rem 1.25rem 3.1rem;
+		margin-bottom: 0.9rem;
+		background-color: var(--surface);
+		border: 1px solid var(--line);
+		border-radius: var(--radius-lg);
+		box-shadow: var(--shadow);
+		scroll-margin-top: 4.75rem;
+	}
+
+	.deck-reader .slide--title {
+		background: linear-gradient(150deg, var(--accent-strong), #1a56b0 55%, #3b7dd8);
+		min-height: 24rem;
+		padding-bottom: 1.5rem;
+		border: 0;
+	}
+
+	.deck-reader .slide--divider {
+		background: var(--ink);
+		padding: 2rem 1.25rem;
+		border: 0;
+	}
+
+	.deck-reader .slide--statement { padding-top: 2rem; }
+
+	.deck-reader .slide__kicker { font-size: 0.72rem; margin-bottom: 0.6rem; }
+
+	.deck-reader .slide h2 {
+		font-size: 1.5rem !important;
+		line-height: 1.18;
+		margin-bottom: 0.8rem;
+		max-width: none;
+	}
+
+	.deck-reader .slide--statement h2 { font-size: 1.65rem !important; }
+	.deck-reader .slide--divider h2 { font-size: 1.75rem !important; margin: 0; }
+	.deck-reader .slide--title h1 { font-size: 1.9rem; margin-bottom: 0.8rem; }
+	.deck-reader .slide--title .title-meta { margin-top: 1.1rem; padding-top: 0.8rem; font-size: 0.8rem; }
+
+	.deck-reader .slide h3 { font-size: 1.05rem; margin-bottom: 0.35rem; }
+
+	.deck-reader .slide p,
+	.deck-reader .slide ul,
+	.deck-reader .slide ol {
+		font-size: 0.98rem !important;
+		max-width: none;
+		margin-top: 0 !important;
+	}
+
+	.deck-reader .slide p { margin-bottom: 0.7rem; }
+	.deck-reader .slide ul, .deck-reader .slide ol { padding-left: 1.2rem; margin-bottom: 0.7rem; }
+	.deck-reader .slide li { margin-bottom: 0.5rem; }
+
+	.deck-reader .split,
+	.deck-reader .split--wide-left,
+	.deck-reader .split--wide-right {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1rem;
+		margin-top: 0 !important;
+	}
+
+	.deck-reader .slide figcaption { font-size: 0.75rem; margin-top: 0.4rem; }
+
+	.deck-reader .deck-stats {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.6rem;
+		margin: 0.4rem 0 0.8rem;
+		max-width: none !important;
+		width: 100%;
+	}
+
+	.deck-reader .deck-stat { padding: 0.75rem 0.8rem; border-radius: 10px; text-align: left; }
+	.deck-reader .deck-stat__value { font-size: 1.45rem; }
+	.deck-reader .deck-stat__label { font-size: 0.75rem; margin-top: 0.3rem; }
+
+	.deck-reader .timeline { gap: 0.5rem; }
+	.deck-reader .timeline__row { grid-template-columns: 4.6rem minmax(0, 1fr); gap: 0.75rem; font-size: 0.92rem; padding-bottom: 0.5rem; }
+	.deck-reader .timeline__when { font-size: 0.82rem; }
+
+	/* The five-column comparison keeps its shape and scrolls sideways. */
+	.deck-reader .slide table {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		font-size: 0.8rem;
+		text-align: left;
+	}
+
+	.deck-reader .slide th,
+	.deck-reader .slide td { padding: 0.45rem 0.5rem; min-width: 5.5rem; }
+	.deck-reader .slide td:first-child,
+	.deck-reader .slide th:first-child { min-width: 9rem; }
+	.deck-reader .slide thead th { font-size: 0.68rem; }
+
+	.deck-reader .slide .verdict { font-size: 0.92rem; margin-bottom: 0.6rem; }
+	.deck-reader .slide .verdict__title { font-size: 1rem; }
+	.deck-reader .slide .verdict__detail { font-size: 0.85rem; }
+	.deck-reader .slide .mono-block { font-size: 0.72rem; }
+
+	.deck-reader .pill-row { gap: 0.4rem; margin-top: 0.6rem; }
+	.deck-reader .pill { font-size: 0.8rem; padding: 0.3rem 0.7rem; }
+
+	.deck-reader .demo-link { margin-top: 0.4rem; font-size: 0.9rem; padding: 0.5rem 1rem; }
+
+	.deck-reader .slide__footer {
+		left: 1.25rem;
+		right: 1.25rem;
+		bottom: 0.85rem;
+		font-size: 0.72rem;
+		padding-top: 0.5rem;
+	}
+}
+
 /* ------------------------------ Print ------------------------------ */
 
 @page { size: A4 landscape; margin: 0; }
 
 @media print {
 	html, body { overflow: visible; height: auto; background: #fff; }
-	body.deck { display: block; }
-	.deck-help, .progress { display: none !important; }
+	body.deck { display: block; padding: 0; }
+	.deck-help, .progress, .deck-reader-only, .deck-controls, .deck-rotate-hint { display: none !important; }
 
 	.stage {
+		position: static;
+		margin: 0;
 		width: 100%;
 		height: auto;
 		box-shadow: none;

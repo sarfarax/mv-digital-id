@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
 <title>Tests &middot; Maldives Digital ID</title>
 <link rel="stylesheet" href="css/style.css">
 <style>
@@ -22,6 +23,11 @@
 	.stage-grid canvas { width: 100%; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-sunken); display: block; }
 	.stage-grid figcaption { font-size: 0.78rem; color: var(--ink-faint); margin-top: 0.3rem; }
 	.stage-grid figure { margin: 0; }
+	@media (max-width: 560px) {
+		.test-row { grid-template-columns: 3.6rem minmax(0, 1fr); gap: 0.15rem 0.6rem; }
+		.test-row__detail { grid-column: 2; white-space: normal; overflow-wrap: anywhere; }
+		.stage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	}
 </style>
 </head>
 <body>

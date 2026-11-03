@@ -287,6 +287,25 @@
 @media (max-width: 700px) {
 	.figure-pair,
 	.figure-grid { grid-template-columns: 1fr; }
+
+	.doc { padding: 1.5rem max(1rem, env(safe-area-inset-right)) 3rem max(1rem, env(safe-area-inset-left)); }
+	.doc__title { font-size: 1.7rem; }
+	.doc__subtitle { font-size: 1rem; }
+	.doc__meta { grid-template-columns: 1fr; gap: 0 0; }
+	.doc__meta dd { margin-bottom: 0.55rem; }
+	.toc { padding: 1rem 1.1rem; }
+	.toc ol { columns: 1; font-size: 0.95rem; }
+	.toc li { margin-bottom: 0.45rem; }
+
+	/* Comparison tables keep their columns and scroll sideways instead of crushing each cell to one word. */
+	.doc table {
+		display: block;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		font-size: 0.82rem;
+	}
+	.doc th, .doc td { padding: 0.45rem 0.55rem; min-width: 6.5rem; }
+	.doc td:first-child, .doc th:first-child { min-width: 8.5rem; }
 }
 
 /* ------------------------------ Bits and pieces ------------------------------ */
